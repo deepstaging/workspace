@@ -1,0 +1,49 @@
+# Deepstaging Workspace .gitignore
+
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Agent State (workspace-scoped, user-specific)
+.claude/*
+!.claude/README.md
+.copilot/*
+!.copilot/README.md
+.cursor/*
+!.cursor/README.md
+
+# Session Documentation stays in .docs/ and is committed
+# (These are workspace-wide decisions and plans, not user-specific)
+
+# Environment
+.envrc.local
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Build artifacts (if any at workspace level)
+/build/
+/dist/
+/out/
+
+# Session documentation (temporary, user-specific)
+.session/
