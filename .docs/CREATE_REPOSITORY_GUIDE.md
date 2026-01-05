@@ -201,6 +201,27 @@ The target directory name already exists. Either:
 - Choose a different name
 - Remove the existing directory: `rm -rf repo-name`
 
+### Interactive prompts show blank screen
+
+If you see "Found N templates" but the selection list is blank, this indicates a TTY/terminal issue. Try:
+
+1. **Run directly in your terminal** (not through another tool):
+   ```bash
+   workspace-create-repository
+   ```
+
+2. **Use non-interactive mode** with all options specified:
+   ```bash
+   workspace-create-repository -t deepstaging-roslyn -n MyTool --no-sample
+   ```
+
+3. **Check your terminal supports ANSI escape codes**:
+   ```bash
+   echo $TERM  # Should be something like "xterm-256color"
+   ```
+
+Note: The command was recently updated to use `@inquirer/prompts` for better TTY handling.
+
 ### Template options not working
 
 Check the template's supported options:
