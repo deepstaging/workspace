@@ -150,6 +150,26 @@ fi
 
 echo "✓ All required tools available (gh, direnv)"
 
+# Install npm dependencies for TypeScript scripts
+echo ""
+echo "Checking npm dependencies..."
+
+if [[ -f "$WORKSPACE_DIR/package.json" ]]; then
+    cd "$WORKSPACE_DIR"
+    
+    if [[ ! -d "node_modules" ]] || [[ ! -f "node_modules/.package-lock.json" ]]; then
+        echo "📦 Installing npm dependencies..."
+        npm install
+        echo "✓ npm dependencies installed"
+    else
+        echo "✓ npm dependencies already installed"
+    fi
+    
+    cd "$PARENT_DIR"
+else
+    echo "⚠️  No package.json found - skipping npm install"
+fi
+
 # Check for useful CLI tools
 echo ""
 echo "Checking optional CLI tools..."

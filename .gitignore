@@ -45,5 +45,12 @@ Thumbs.db
 /dist/
 /out/
 
+# Node.js / TypeScript
+node_modules/
+/scripts/*.js
+/scripts/*.d.ts
+/scripts/*.map
+*.tsbuildinfo
+
 # Session documentation (temporary, user-specific)
 .session/
