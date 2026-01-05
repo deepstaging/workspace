@@ -109,40 +109,23 @@ function discoverTemplates(): DotnetTemplate[] {
 }
 
 async function promptForTemplate(templates: DotnetTemplate[]): Promise<string> {
-  const choices: { name: string; value: string; disabled?: boolean }[] = [];
-  
-  // Group templates: Deepstaging first, then others
-  const deepstagingTemplates = templates.filter(t => t.tags.toLowerCase().includes('deepstaging'));
-  const otherTemplates = templates.filter(t => !t.tags.toLowerCase().includes('deepstaging'));
-  
-  // Add Deepstaging section
-  if (deepstagingTemplates.length > 0) {
-    choices.push({ name: chalk.bold.green('─── Deepstaging Templates ───'), value: '', disabled: true });
-    deepstagingTemplates.forEach(t => {
-      choices.push({
-        name: `  ${chalk.cyan(t.shortName)} ${chalk.dim('-')} ${t.templateName}`,
-        value: t.shortName
-      });
-    });
-  }
-  
-  // Add separator and other templates
-  if (otherTemplates.length > 0) {
-    if (deepstagingTemplates.length > 0) {
-      choices.push({ name: chalk.bold.gray('─── Other Templates ───'), value: '', disabled: true });
-    }
-    otherTemplates.forEach(t => {
-      choices.push({
-        name: `  ${chalk.cyan(t.shortName)} ${chalk.dim('-')} ${t.templateName}`,
-        value: t.shortName
-      });
-    });
-  }
+  // Create searchable choices
+  const choices = templates.map(t => {
+    const isDeepstaging = t.tags.toLowerCase().includes('deepstaging');
+    const prefix = isDeepstaging ? '⭐' : '  ';
+    
+    return {
+      name: `${prefix} ${t.shortName}`,
+      value: t.shortName,
+      description: t.templateName
+    };
+  });
 
   const template = await select({
-    message: 'Choose a template:',
+    message: 'Choose a template (type to filter):',
     choices: choices as any,
-    pageSize: 20
+    pageSize: 15,
+    loop: false
   });
 
   return template;
