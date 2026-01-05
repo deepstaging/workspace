@@ -6,6 +6,7 @@
 
 import { Command } from 'commander';
 import path from 'path';
+import { promises as fs } from 'fs';
 import { findProjects, buildProject, packProject } from './lib/dotnet.js';
 import { pushToLocalFeed, getDefaultFeedPath, clearLocalFeed } from './lib/nuget.js';
 import { printHeader, printSuccess, printError, printWarning, createSpinner } from './lib/ui.js';
@@ -54,10 +55,12 @@ async function main() {
     }
   }
 
-  // Find all projects
+  // Find all projects - look in src/ subdirectory if it exists
   const spinner = createSpinner('Scanning for .NET projects...');
   spinner.start();
-  const projects = await findProjects(projectDir);
+  const srcDir = path.join(projectDir, 'src');
+  const searchDir = await fs.access(srcDir).then(() => srcDir).catch(() => projectDir);
+  const projects = await findProjects(searchDir);
   spinner.succeed(`Found ${projects.length} projects`);
   console.log();
 

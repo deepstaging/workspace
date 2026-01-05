@@ -77,7 +77,7 @@ export async function getProjectInfo(
 export async function findProjects(rootDir: string): Promise<DotNetProject[]> {
   const projects: DotNetProject[] = [];
   
-  // Recursively find all .Nuget.csproj files (packable projects)
+  // Recursively find all packable projects (IsPackable=true)
   async function findPackableProjects(dir: string, depth: number = 0): Promise<void> {
     if (depth > 3) return; // Limit recursion depth
     
@@ -91,14 +91,27 @@ export async function findProjects(rootDir: string): Promise<DotNetProject[]> {
         
         const entryPath = path.join(dir, entry.name);
         
-        // Check if this directory contains a .Nuget.csproj file
+        // Check if this directory contains a .csproj file that is packable
         const files = await fs.readdir(entryPath).catch(() => []);
-        const nugetCsproj = files.find(f => f.endsWith('.Nuget.csproj'));
+        const csprojFile = files.find(f => f.endsWith('.csproj'));
         
-        if (nugetCsproj) {
-          const info = await getProjectInfo(entryPath);
-          if (info) {
-            projects.push(info);
+        if (csprojFile) {
+          // Check if it's packable
+          const csprojPath = path.join(entryPath, csprojFile);
+          try {
+            const content = await fs.readFile(csprojPath, 'utf8');
+            const isPackable = content.includes('<IsPackable>true</IsPackable>');
+            const isTest = csprojFile.includes('.Tests.');
+            
+            // Include if it's packable and not a test project
+            if (isPackable && !isTest) {
+              const info = await getProjectInfo(entryPath);
+              if (info) {
+                projects.push(info);
+              }
+            }
+          } catch (error) {
+            // Skip if we can't read the file
           }
         }
         
