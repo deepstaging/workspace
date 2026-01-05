@@ -52,16 +52,18 @@ select_repos() {
     
     # Check if fzf is available
     if command -v fzf &> /dev/null; then
-        # Use fzf for nice multi-select
+        # Use fzf for nice multi-select with all items pre-selected
         local selected=$(printf '%s\n' "${info_array[@]}" | \
             fzf --multi \
                 --height=~50% \
                 --border \
-                --header="Select repositories to push (Tab to select, Enter to confirm)" \
+                --header="Repositories to push (Tab=toggle, Ctrl-A=all, Ctrl-D=none, Enter=confirm)" \
                 --prompt="❯ " \
                 --pointer="▶" \
                 --marker="✓ " \
-                --reverse)
+                --reverse \
+                --bind 'ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all' \
+                --bind 'start:select-all')
         
         # Extract repo names from selection
         SELECTED_REPOS=()
@@ -75,12 +77,12 @@ select_repos() {
     else
         # Fallback to simple numbered selection
         echo ""
-        echo "Select repositories to push (space-separated numbers, e.g., '1 3 4'):"
-        read -p "Numbers (or 'all'): " -r SELECTIONS
+        echo "Select repositories to push (space-separated numbers, or 'all' for all):"
+        read -p "Numbers (default: all): " -r SELECTIONS
         echo ""
         
         SELECTED_REPOS=()
-        if [[ "$SELECTIONS" == "all" ]]; then
+        if [[ -z "$SELECTIONS" ]] || [[ "$SELECTIONS" == "all" ]]; then
             SELECTED_REPOS=("${repos_array[@]}")
         else
             for num in $SELECTIONS; do
@@ -250,19 +252,54 @@ if [[ "$HAS_UNCOMMITTED" == "true" ]]; then
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo ""
-        echo "Commit message options:"
-        echo "  1) Enter custom message"
-        echo "  2) Generate with AI (GitHub Copilot CLI)"
-        echo "  3) Use default message"
-        echo ""
-        read -p "Choice (1/2/3): " -n 1 -r COMMIT_CHOICE
-        echo
-        echo ""
+        
+        # Create menu options
+        if command -v fzf &> /dev/null; then
+            # Use fzf for nice selection
+            COMMIT_CHOICE=$(printf "🤖 Generate with AI (GitHub Copilot CLI)\n✏️  Enter custom message\n📅 Use default message (Sync changes from date)" | \
+                fzf --height=8 \
+                    --border \
+                    --header="Select commit message method:" \
+                    --prompt="❯ " \
+                    --pointer="▶" \
+                    --reverse \
+                    --select-1)
+            
+            echo ""
+            
+            # Parse selection
+            if [[ "$COMMIT_CHOICE" == *"Generate with AI"* ]]; then
+                COMMIT_CHOICE="ai"
+            elif [[ "$COMMIT_CHOICE" == *"Enter custom"* ]]; then
+                COMMIT_CHOICE="custom"
+            else
+                COMMIT_CHOICE="default"
+            fi
+        else
+            # Fallback to numbered menu
+            echo "Commit message options:"
+            echo "  1) Enter custom message"
+            echo "  2) Generate with AI (GitHub Copilot CLI)"
+            echo "  3) Use default message"
+            echo ""
+            read -p "Choice (1/2/3, default: 2): " -n 1 -r COMMIT_CHOICE_NUM
+            echo
+            echo ""
+            
+            # Default to AI if empty
+            if [[ -z "$COMMIT_CHOICE_NUM" ]] || [[ "$COMMIT_CHOICE_NUM" == "2" ]]; then
+                COMMIT_CHOICE="ai"
+            elif [[ "$COMMIT_CHOICE_NUM" == "1" ]]; then
+                COMMIT_CHOICE="custom"
+            else
+                COMMIT_CHOICE="default"
+            fi
+        fi
         
         COMMIT_MSG=""
         
         case $COMMIT_CHOICE in
-            2)
+            ai)
                 # Try to generate with GitHub Copilot CLI
                 if command -v copilot &> /dev/null; then
                     echo "🤖 Generating commit message with GitHub Copilot..."
@@ -320,12 +357,12 @@ Reply with ONLY the commit message, nothing else."
                     read -p "Enter custom message: " COMMIT_MSG
                 fi
                 ;;
-            3)
+            custom)
+                read -p "Enter commit message: " COMMIT_MSG
+                ;;
+            default)
                 COMMIT_MSG="Sync changes from $(date +%Y-%m-%d)"
                 echo "Using default message: \"$COMMIT_MSG\""
-                ;;
-            *)
-                read -p "Enter commit message: " COMMIT_MSG
                 ;;
         esac
         
