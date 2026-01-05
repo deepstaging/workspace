@@ -32,7 +32,7 @@ workspace-create-repository
 ```
 
 You'll be prompted for:
-1. **Template selection** - Choose from installed dotnet templates
+1. **Template selection** - Choose from installed dotnet templates (Deepstaging templates shown first)
 2. **Repository name** - PascalCase name (e.g., MyAwesomeTool)
 3. **Options** - Include docs, exclude sample, etc.
 
@@ -60,15 +60,18 @@ workspace-create-repository \
 
 ## Template Discovery
 
-The command automatically discovers all installed dotnet templates:
+The command automatically discovers all installed dotnet templates and groups them for easy navigation:
+
+- **Deepstaging Templates**: Shown first (any template with "Deepstaging" tag)
+- **Other Templates**: Built-in .NET templates sorted alphabetically
 
 ```bash
 # Install a template package
 dotnet new install Deepstaging.Templates
 
-# The template becomes immediately available
+# The template becomes immediately available at the top of the list
 workspace-create-repository
-# Shows "deepstaging-roslyn" in the list!
+# Shows "deepstaging-roslyn" in the Deepstaging Templates section!
 ```
 
 ## What Gets Created
