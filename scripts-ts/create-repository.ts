@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import inquirer from 'inquirer';
+import { select, input, checkbox } from '@inquirer/prompts';
 import ora from 'ora';
 import chalk from 'chalk';
 
@@ -98,54 +98,41 @@ function discoverTemplates(): DotnetTemplate[] {
 async function promptForTemplate(templates: DotnetTemplate[]): Promise<string> {
   const choices = templates.map(t => ({
     name: `${chalk.cyan(t.shortName)} - ${t.templateName}`,
-    value: t.shortName,
-    short: t.shortName
+    value: t.shortName
   }));
 
-  const { template } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'template',
-      message: 'Choose a template:',
-      choices,
-      pageSize: 15
-    }
-  ]);
+  const template = await select({
+    message: 'Choose a template:',
+    choices,
+    pageSize: 15
+  });
 
   return template;
 }
 
 async function promptForName(): Promise<string> {
-  const { name } = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'name',
-      message: 'Repository name (PascalCase):',
-      validate: (input: string) => {
-        if (!input.trim()) return 'Name is required';
-        if (!/^[A-Z][a-zA-Z0-9]*$/.test(input.trim())) {
-          return 'Must be PascalCase (e.g., MyAwesomeTool)';
-        }
-        return true;
+  const name = await input({
+    message: 'Repository name (PascalCase):',
+    validate: (input: string) => {
+      if (!input.trim()) return 'Name is required';
+      if (!/^[A-Z][a-zA-Z0-9]*$/.test(input.trim())) {
+        return 'Must be PascalCase (e.g., MyAwesomeTool)';
       }
+      return true;
     }
-  ]);
+  });
 
   return name.trim();
 }
 
 async function promptForOptions(): Promise<{ withDocs: boolean; noSample: boolean }> {
-  const { options } = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'options',
-      message: 'Template options:',
-      choices: [
-        { name: 'Include DocFX documentation site', value: 'withDocs', checked: false },
-        { name: 'Exclude sample consumer project', value: 'noSample', checked: false }
-      ]
-    }
-  ]);
+  const options = await checkbox({
+    message: 'Template options:',
+    choices: [
+      { name: 'Include DocFX documentation site', value: 'withDocs', checked: false },
+      { name: 'Exclude sample consumer project', value: 'noSample', checked: false }
+    ]
+  });
 
   return {
     withDocs: options.includes('withDocs'),
