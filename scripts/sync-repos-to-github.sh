@@ -398,9 +398,26 @@ Reply with ONLY the commit message, nothing else."
     fi
 fi
 
+# Build lists for repos that need pushing (filter out up-to-date ones)
+PUSHABLE_REPOS=()
+PUSHABLE_INFO=()
+
+for i in "${!REPOS[@]}"; do
+    # Include repos that have uncommitted changes or unpushed commits
+    if [[ "${REPO_UNCOMMITTED[$i]}" == "true" ]] || [[ "${REPO_UNPUSHED[$i]}" -gt 0 ]]; then
+        PUSHABLE_REPOS+=("${REPOS[$i]}")
+        PUSHABLE_INFO+=("${REPO_INFO[$i]}")
+    fi
+done
+
+if [[ ${#PUSHABLE_REPOS[@]} -eq 0 ]]; then
+    echo "✅ All repositories are up to date!"
+    exit 0
+fi
+
 # Select repos to push
 echo "Select repositories to push:"
-select_repos REPOS REPO_INFO
+select_repos PUSHABLE_REPOS PUSHABLE_INFO
 
 if [[ ${#SELECTED_REPOS[@]} -eq 0 ]]; then
     echo "No repositories selected. Exiting."
