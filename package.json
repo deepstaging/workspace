@@ -10,7 +10,8 @@
     "discover-dependents": "tsx scripts-ts/discover-dependents.ts",
     "publish": "tsx scripts-ts/publish.ts",
     "publish-local": "tsx scripts-ts/publish-local.ts",
-    "new-project": "tsx scripts-ts/new-project.ts"
+    "new-project": "tsx scripts-ts/new-project.ts",
+    "create-repository": "tsx scripts-ts/create-repository.ts"
   },
   "bin": {
     "workspace-sync": "./scripts/sync-repos.js"

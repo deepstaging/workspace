@@ -120,6 +120,24 @@ The workspace now uses **TypeScript for scripting** instead of bash, providing:
 
 ### Available Scripts
 
+**create-repository** - Create new repository from templates:
+```bash
+cd workspace
+npm run create-repository              # Interactive mode
+npm run create-repository -- --help    # Show options
+
+# Or use the wrapper (after direnv loads):
+workspace-create-repository           # Interactive
+workspace-create-repository -t deepstaging-roslyn -n MyTool  # Direct
+```
+
+Features:
+- Auto-discovers installed dotnet templates
+- Interactive template selection
+- Generates repository as sibling to workspace
+- Initializes git with initial commit
+- Beautiful terminal UI with spinners and prompts
+
 **sync-repos** - AI-powered repository synchronization:
 ```bash
 cd workspace
