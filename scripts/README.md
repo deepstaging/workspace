@@ -2,6 +2,21 @@
 
 This directory contains automation scripts for the Deepstaging workspace.
 
+## Directory Structure
+
+```
+scripts/
+├── lib/              # Utility functions (not auto-discovered by .envrc)
+├── bootstrap.sh      # Initial workspace setup
+├── sync-repos-to-github.sh  # Commit and push repos to GitHub  
+├── new-roslyn-project.sh    # Create new Roslyn project
+├── publish.sh        # Build and publish packages
+├── publish-to-local-nuget.sh  # Publish Deepstaging core
+└── discover-dependents.sh     # Find repos that depend on packages
+```
+
+**Note:** Files in the `lib/` subdirectory are utility functions that can be sourced by scripts but are not auto-aliased by `.envrc`.
+
 ## Bootstrap
 
 ### `bootstrap.sh` 🚀 **Run this first**
