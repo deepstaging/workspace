@@ -130,3 +130,4 @@ Each repo (`deepstaging/`, `effects/`, etc.):
 
 See `.copilot-instructions.md` for agent behavior and conventions.
 All agents should use the workspace-level configuration to maintain context across repositories.
+test change
