@@ -15,9 +15,6 @@ get_github_repo_name() {
 scan_repositories() {
     local root_dir="$1"
     
-    echo "Scanning local repositories..."
-    echo ""
-    
     REPOS=()
     REPO_INFO=()
     REPO_UNPUSHED=()
@@ -25,6 +22,30 @@ scan_repositories() {
     
     cd "$root_dir"
     
+    # Count total git repos first
+    local total_repos=0
+    for dir in */; do
+        [[ -d "${dir%/}/.git" ]] && total_repos=$((total_repos + 1))
+    done
+    
+    # Start spinner in background
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local spin_i=0
+    
+    # Function to update spinner
+    update_spinner() {
+        while true; do
+            spin_i=$(( (spin_i + 1) % 10 ))
+            printf "\r${spin:$spin_i:1} " >&2
+            sleep 0.1
+        done
+    }
+    
+    # Start spinner
+    update_spinner &
+    local spinner_pid=$!
+    
+    local current=0
     for dir in */; do
         local repo="${dir%/}"
         
@@ -32,6 +53,11 @@ scan_repositories() {
         if [[ ! -d "$repo/.git" ]]; then
             continue
         fi
+        
+        current=$((current + 1))
+        
+        # Update progress line (spinner on first line, status on second)
+        printf "\r\033[K${spin:$spin_i:1} Scanning repositories... [%d/%d]\n\033[K  → %s\033[A" "$current" "$total_repos" "$repo" >&2
         
         cd "$repo"
         
@@ -83,6 +109,14 @@ scan_repositories() {
         
         cd "$root_dir"
     done
+    
+    # Stop spinner
+    kill $spinner_pid 2>/dev/null || true
+    wait $spinner_pid 2>/dev/null || true
+    
+    printf "\r\033[K\n\033[K\033[A" >&2  # Clear both lines
+    echo "✓ Scanned ${#REPOS[@]} repositories"
+    echo ""
 }
 
 # Ensure repository exists on GitHub

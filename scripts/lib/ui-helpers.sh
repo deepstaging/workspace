@@ -116,3 +116,17 @@ display_repo_status() {
     echo ""
     return 0
 }
+
+# Show progress indicator for a running process
+# Usage: show_progress "message" & PID=$!; your_command; kill $PID 2>/dev/null
+show_progress() {
+    local message="${1:-Working}"
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+    
+    while true; do
+        i=$(( (i+1) % 10 ))
+        printf "\r${message}... ${spin:$i:1} " >&2
+        sleep 0.1
+    done
+}
