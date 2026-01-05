@@ -11,8 +11,6 @@ set -euo pipefail
 #   ./new-roslyn-project.sh MyTool --no-sample
 #   ./new-roslyn-project.sh MyTool --with-docs
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Resolve script location (follow symlinks)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 while [ -L "$SCRIPT_PATH" ]; do
@@ -22,10 +20,10 @@ while [ -L "$SCRIPT_PATH" ]; do
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 
-# Running from workspace/scripts directory
-WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-ORG_DIR="$(cd "$WORKSPACE_DIR/.." && pwd)"
-DEEPSTAGING_REPO="$ORG_DIR/deepstaging"
+# Use environment variables if available (from .envrc), otherwise calculate
+WORKSPACE_DIR="${DEEPSTAGING_WORKSPACE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$WORKSPACE_DIR/.." && pwd)}"
+DEEPSTAGING_REPO="$ORG_ROOT/deepstaging"
 
 TEMPLATE_PATH="$DEEPSTAGING_REPO/packages/Deepstaging.Templates"
 
@@ -63,7 +61,7 @@ Examples:
   $0 MyTool --with-docs
 
 Output Location:
-  Project will be created at: $ORG_DIR/<project-name>/
+  Project will be created at: $ORG_ROOT/<project-name>/
 
 Template Location:
   Using template from: $TEMPLATE_PATH
@@ -91,7 +89,7 @@ fi
 
 # Convert to kebab-case for directory name
 PROJECT_DIR_NAME=$(echo "$PROJECT_NAME" | sed 's/\([A-Z]\)/-\1/g' | sed 's/^-//' | tr '[:upper:]' '[:lower:]')
-PROJECT_DIR="$ORG_DIR/$PROJECT_DIR_NAME"
+PROJECT_DIR="$ORG_ROOT/$PROJECT_DIR_NAME"
 
 # Parse template options
 TEMPLATE_ARGS=""

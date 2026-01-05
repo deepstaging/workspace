@@ -12,20 +12,52 @@ set -e
 #   ./scripts/publish.sh effects --restore-deps
 #   ./scripts/publish.sh my-new-feature --restore-deps
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-ORG_DIR="$(cd "$WORKSPACE_DIR/.." && pwd)"
-LOCAL_NUGET_FEED="$HOME/.nuget/local-feed"
+# Use environment variables if available (from .envrc), otherwise calculate
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+WORKSPACE_DIR="${DEEPSTAGING_WORKSPACE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+LOCAL_NUGET_FEED="${DEEPSTAGING_LOCAL_NUGET_FEED:-$HOME/.nuget/local-feed}"
 RESTORE_DEPS=false
+SCRIPT_NAME=$(basename "$0")
+
+show_help() {
+    cat << EOF
+Usage: $SCRIPT_NAME <repo-name> [OPTIONS]
+
+Build and publish a repository's packages to local NuGet feed.
+
+ARGUMENTS:
+    repo-name           Name of the repository to publish (e.g., deepstaging, effects)
+
+OPTIONS:
+    --restore-deps     Restore packages in dependent repositories after publishing
+    --help, -h         Show this help message
+
+DESCRIPTION:
+    This script:
+    - Discovers .csproj files in the repository
+    - Builds and packs them to the local NuGet feed (~/.nuget/local-feed)
+    - Optionally discovers and restores dependent repositories
+
+LOCAL NUGET FEED:
+    $LOCAL_NUGET_FEED
+
+EXAMPLES:
+    $SCRIPT_NAME deepstaging                  # Build and publish Deepstaging
+    $SCRIPT_NAME effects --restore-deps       # Publish and restore dependents
+    $SCRIPT_NAME my-new-feature --restore-deps
+
+EOF
+}
 
 # Parse arguments
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <repo-name> [--restore-deps]"
-    echo ""
-    echo "Examples:"
-    echo "  $0 deepstaging"
-    echo "  $0 effects --restore-deps"
+    show_help
     exit 1
+fi
+
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
 fi
 
 REPO_NAME="$1"
@@ -37,15 +69,20 @@ while [[ $# -gt 0 ]]; do
             RESTORE_DEPS=true
             shift
             ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
         *)
             echo "Unknown option: $1"
+            echo "Try '$SCRIPT_NAME --help' for more information."
             exit 1
             ;;
     esac
 done
 
 # Discover repository
-REPO_DIR="$ORG_DIR/$REPO_NAME"
+REPO_DIR="$ORG_ROOT/$REPO_NAME"
 
 if [ ! -d "$REPO_DIR" ]; then
     echo "❌ Repository not found: $REPO_DIR"

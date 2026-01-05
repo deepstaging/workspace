@@ -12,20 +12,47 @@ set -e
 #   ./scripts/discover-dependents.sh Deepstaging --restore # List and restore
 #   ./scripts/discover-dependents.sh Deepstaging.Effects --restore
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-ORG_DIR="$(cd "$WORKSPACE_DIR/.." && pwd)"
+# Use environment variables if available (from .envrc), otherwise calculate
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+WORKSPACE_DIR="${DEEPSTAGING_WORKSPACE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 RESTORE=false
+SCRIPT_NAME=$(basename "$0")
+
+show_help() {
+    cat << EOF
+Usage: $SCRIPT_NAME <package-name> [OPTIONS]
+
+Discover repositories that depend on a specific package.
+
+ARGUMENTS:
+    package-name        Name of the package to search for (e.g., Deepstaging, Deepstaging.Effects)
+
+OPTIONS:
+    --restore          Restore packages in dependent repositories after discovery
+    --help, -h         Show this help message
+
+DESCRIPTION:
+    Scans all repositories in the parent directory for project references
+    to the specified package. Optionally restores NuGet packages in
+    dependent repositories.
+
+EXAMPLES:
+    $SCRIPT_NAME Deepstaging                    # List repos that reference Deepstaging
+    $SCRIPT_NAME Deepstaging --restore          # List and restore
+    $SCRIPT_NAME Deepstaging.Effects --restore  # Find Effects dependents
+
+EOF
+}
 
 # Parse arguments
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <package-name> [--restore]"
-    echo ""
-    echo "Examples:"
-    echo "  $0 Deepstaging"
-    echo "  $0 Deepstaging --restore"
-    echo "  $0 Deepstaging.Effects --restore"
+    show_help
     exit 1
+fi
+
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
 fi
 
 PACKAGE_NAME="$1"
@@ -37,8 +64,13 @@ while [[ $# -gt 0 ]]; do
             RESTORE=true
             shift
             ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
         *)
             echo "Unknown option: $1"
+            echo "Try '$SCRIPT_NAME --help' for more information."
             exit 1
             ;;
     esac
@@ -52,7 +84,7 @@ echo ""
 DEPENDENT_REPOS=()
 PACKAGE_REPO_NAME=$(echo "$PACKAGE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/deepstaging\.//g')
 
-for REPO_DIR in "$ORG_DIR"/*; do
+for REPO_DIR in "$ORG_ROOT"/*; do
     if [ -d "$REPO_DIR/.git" ]; then
         REPO_NAME=$(basename "$REPO_DIR")
         
