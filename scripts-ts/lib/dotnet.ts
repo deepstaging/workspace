@@ -76,20 +76,41 @@ export async function getProjectInfo(
 
 export async function findProjects(rootDir: string): Promise<DotNetProject[]> {
   const projects: DotNetProject[] = [];
-  const entries = await fs.readdir(rootDir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    if (entry.name.startsWith('.')) continue;
-
-    const projectPath = path.join(rootDir, entry.name);
-    const info = await getProjectInfo(projectPath);
-
-    if (info) {
-      projects.push(info);
+  
+  // Recursively find all .Nuget.csproj files (packable projects)
+  async function findPackableProjects(dir: string, depth: number = 0): Promise<void> {
+    if (depth > 3) return; // Limit recursion depth
+    
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        if (entry.name.startsWith('.')) continue;
+        if (entry.name === 'bin' || entry.name === 'obj') continue;
+        
+        const entryPath = path.join(dir, entry.name);
+        
+        // Check if this directory contains a .Nuget.csproj file
+        const files = await fs.readdir(entryPath).catch(() => []);
+        const nugetCsproj = files.find(f => f.endsWith('.Nuget.csproj'));
+        
+        if (nugetCsproj) {
+          const info = await getProjectInfo(entryPath);
+          if (info) {
+            projects.push(info);
+          }
+        }
+        
+        // Recurse into subdirectories
+        await findPackableProjects(entryPath, depth + 1);
+      }
+    } catch (error) {
+      // Ignore errors (permission denied, etc.)
     }
   }
-
+  
+  await findPackableProjects(rootDir);
   return projects;
 }
 
