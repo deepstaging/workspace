@@ -2,17 +2,80 @@
 
 This directory contains TypeScript source files for workspace scripts. The scripts are compiled to JavaScript in the `scripts/` directory or run directly with `tsx`.
 
-## Structure
+## Available Scripts
+
+### Repository Management
+
+**sync-repos.ts** - Sync local repositories to GitHub
+```bash
+npm run sync
+workspace-sync  # via direnv
+```
+Features:
+- Scans all repositories for changes
+- Interactive commit strategy selection
+- **AI-powered commit messages** via GitHub Copilot
+- Beautiful terminal UI with progress indicators
+- Type-safe git operations
+
+### .NET Project Management
+
+**discover-dependents.ts** - Find project dependencies
+```bash
+npm run discover -- ProjectName [searchDir]
+workspace-discover-dependents ProjectName
+```
+Features:
+- Scans .NET projects in directory
+- Finds ProjectReference dependencies
+- Shows which projects depend on target
+
+**publish.ts** - Publish all projects to local NuGet
+```bash
+npm run publish -- deepstaging [--clear] [--skip-build]
+workspace-publish deepstaging
+```
+Features:
+- Discovers all .NET projects automatically
+- Builds and packs each project
+- Pushes to local NuGet feed
+- Progress indicators and summary
+- Optional feed clearing
+
+**publish-local.ts** - Publish single project
+```bash
+npm run publish-local -- ../deepstaging/Deepstaging
+workspace-publish-local ../deepstaging/Deepstaging
+```
+Features:
+- Quick publish for one project
+- Build → Pack → Push workflow
+- Spinner indicators for each step
+
+**new-project.ts** - Create new Roslyn project
+```bash
+npm run new-project -- MyNewTool [--no-sample] [--with-docs]
+workspace-new-project MyNewTool
+```
+Features:
+- Creates .NET solution with sln file
+- Adds main library project
+- Adds test project with xunit
+- Links to Deepstaging framework
+- Optional sample analyzer
+- README template
+
+## Library Structure
 
 ```
-scripts-ts/
-├── lib/               # Shared libraries
-│   ├── types.ts       # TypeScript interfaces and types
-│   ├── git.ts         # Git operations using simple-git
-│   ├── github.ts      # GitHub CLI operations
-│   ├── ui.ts          # Terminal UI utilities (inquirer, ora, chalk)
-│   └── ai.ts          # AI commit message generation
-└── sync-repos.ts      # Main sync script
+lib/
+├── types.ts      # TypeScript interfaces and types
+├── git.ts        # Git operations using simple-git
+├── github.ts     # GitHub CLI operations
+├── ui.ts         # Terminal UI utilities (inquirer, ora, chalk)
+├── ai.ts         # AI commit message generation
+├── dotnet.ts     # .NET CLI operations
+└── nuget.ts      # NuGet package management
 ```
 
 ## Development

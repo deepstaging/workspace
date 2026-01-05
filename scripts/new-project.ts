@@ -1,0 +1,1 @@
+../scripts-ts/new-project.ts

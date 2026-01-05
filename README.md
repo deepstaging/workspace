@@ -52,6 +52,7 @@ cd workspace
 
 This will:
 - Check for required dependencies (installs via `Brewfile` if missing)
+- **Install Node.js and npm packages for TypeScript scripts**
 - Copy `.envrc` to parent directory (enables cross-repo script aliases via direnv)
 - Discover all Deepstaging repositories via GitHub CLI
 - Let you clone all or select individual repos
@@ -63,6 +64,9 @@ This will:
 - `direnv` - Auto-loads environment/scripts per directory
 - `jq` - JSON parsing for automation
 - `ripgrep` - Fast code search
+- `node` - JavaScript runtime for TypeScript scripts
+- `fzf` - Interactive selection menus
+- Optional: `copilot-cli` - AI-powered commit messages
 
 ### 3. Reload your shell
 
@@ -82,15 +86,73 @@ Navigate to any repository and direnv automatically loads the environment:
 
 ```bash
 cd ../deepstaging
-# Scripts are now available as aliases!
-# Example: workspace-publish-to-local-nuget
+# Scripts are now available as commands!
+```
+
+**Use TypeScript scripts for AI-powered workflows:**
+```bash
+cd workspace
+npm run sync              # Repository sync with AI commits
+npm run sync -- --help    # Show help
+
+# Or use the wrapper (after direnv loads):
+ts-sync                   # Direct command
 ```
 
 **Benefits of direnv integration:**
 - 🚀 Automatic Homebrew environment loading
-- 📝 Script aliases from all repositories
-- 🔧 Workspace scripts in PATH
+- 📝 Script commands from all repositories
+- 🔧 TypeScript workspace scripts in PATH
+- 🤖 AI-powered commit messages via GitHub Copilot
 - 🔄 Environment loads/unloads as you navigate directories
+
+## TypeScript Scripts 🆕
+
+The workspace now uses **TypeScript for scripting** instead of bash, providing:
+
+### Why TypeScript?
+
+- ✅ **Type safety** - Catch errors at compile time
+- ✅ **Better async** - Clean async/await syntax (familiar to C# devs)
+- ✅ **Rich libraries** - Professional terminal UI (inquirer, ora, chalk)
+- ✅ **No stdin/tty issues** - Interactive prompts work reliably
+- ✅ **Familiar syntax** - Interfaces, classes, generics like C#
+
+### Available Scripts
+
+**sync-repos** - AI-powered repository synchronization:
+```bash
+cd workspace
+npm run sync              # Run with AI commit messages
+npm run sync -- --help    # Show options
+```
+
+Features:
+- Scans all repositories for changes
+- Interactive commit strategy selection
+- **AI-generated commit messages** via GitHub Copilot CLI
+- Beautiful terminal UI with spinners and prompts
+- Type-safe git operations
+
+### Development
+
+**Run TypeScript directly** (no compilation needed):
+```bash
+npm run sync
+```
+
+**Compile to JavaScript**:
+```bash
+npm run build
+./scripts/sync-repos.js
+```
+
+**Add new scripts**:
+1. Create `.ts` file in `scripts-ts/`
+2. Use shared libraries from `scripts-ts/lib/`
+3. Add npm script to `package.json`
+
+See `scripts-ts/README.md` and `.docs/TYPESCRIPT_MIGRATION.md` for details.
 
 ## Key Concepts
 

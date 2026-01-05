@@ -1,0 +1,1 @@
+../scripts-ts/publish.ts

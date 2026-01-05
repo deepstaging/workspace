@@ -4,12 +4,18 @@ set -e
 # Deepstaging Workspace Bootstrap Script
 # 
 # This script sets up the multi-repository workspace environment:
-# - Checks for required dependencies (Homebrew, gh, direnv)
+# - Checks for required dependencies (Homebrew, bash 4.0+, gh, direnv, node, npm)
 # - Installs missing dependencies via Homebrew
+# - Installs npm dependencies for TypeScript scripts
 # - Copies .envrc to parent directory for cross-repo script loading
 # - Discovers Deepstaging repositories via GitHub CLI
 # - Clones selected repositories
 # - Sets up local development environment
+#
+# After running bootstrap:
+# - Use `npm run sync` or `ts-sync` for repository synchronization
+# - TypeScript scripts provide AI-powered commit messages
+# - All workspace scripts are available via direnv
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
@@ -36,7 +42,8 @@ Bootstrap the Deepstaging multi-repository workspace.
 
 DESCRIPTION:
     This script sets up the complete development environment:
-    - Installs required dependencies (bash, gh, direnv, jq)
+    - Installs required dependencies (bash, gh, direnv, jq, node, npm)
+    - Installs npm packages for TypeScript scripts
     - Copies .envrc and dotnet-tools.json to parent directory
     - Discovers and clones Deepstaging repositories from GitHub
     - Sets up local NuGet feed
@@ -44,12 +51,16 @@ DESCRIPTION:
 
     The script is interactive and will prompt for confirmations.
 
+    NEW: TypeScript scripts are now available with AI-powered features!
+
 DEPENDENCIES:
     - Homebrew (will check and install others via Brewfile)
     - Bash 4.0+ (for mapfile support)
     - GitHub CLI (gh)
     - direnv
     - jq
+    - Node.js (for TypeScript scripts)
+    - npm (for package management)
 
 EXAMPLES:
     $SCRIPT_NAME              # Run interactive bootstrap
@@ -138,6 +149,14 @@ if ! command -v direnv &> /dev/null; then
     MISSING_TOOLS+=("direnv")
 fi
 
+if ! command -v node &> /dev/null; then
+    MISSING_TOOLS+=("node")
+fi
+
+if ! command -v npm &> /dev/null; then
+    MISSING_TOOLS+=("npm")
+fi
+
 if [[ ${#MISSING_TOOLS[@]} -gt 0 ]]; then
     echo "❌ Missing required tools: ${MISSING_TOOLS[*]}"
     echo ""
@@ -148,17 +167,26 @@ if [[ ${#MISSING_TOOLS[@]} -gt 0 ]]; then
     exit 1
 fi
 
-echo "✓ All required tools available (gh, direnv)"
+echo "✓ All required tools available (gh, direnv, node, npm)"
 
 # Install npm dependencies for TypeScript scripts
 echo ""
-echo "Checking npm dependencies..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📦 Installing npm dependencies for TypeScript scripts"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "The workspace now uses TypeScript for scripts, providing:"
+echo "  • Type-safe git operations"
+echo "  • AI-powered commit messages (via GitHub Copilot)"
+echo "  • Better error handling and async/await"
+echo "  • Familiar C#-like syntax"
+echo ""
 
 if [[ -f "$WORKSPACE_DIR/package.json" ]]; then
     cd "$WORKSPACE_DIR"
     
     if [[ ! -d "node_modules" ]] || [[ ! -f "node_modules/.package-lock.json" ]]; then
-        echo "📦 Installing npm dependencies..."
+        echo "Installing dependencies..."
         npm install
         echo "✓ npm dependencies installed"
     else
@@ -462,10 +490,16 @@ echo "✨ Bootstrap Complete!"
 echo "===================="
 echo ""
 echo "Environment setup:"
-echo "  ✓ Dependencies installed"
+echo "  ✓ Dependencies installed (including Node.js)"
+echo "  ✓ npm packages installed (TypeScript + libraries)"
 echo "  ✓ .envrc configured"
 echo "  ✓ Repositories available"
 echo "  ✓ Local NuGet feed ready"
+echo ""
+echo "🚀 TypeScript Scripts Ready!"
+echo "  • sync-repos: AI-powered repository synchronization"
+echo "  • Uses GitHub Copilot for commit messages"
+echo "  • Type-safe git operations"
 echo ""
 echo "Next steps:"
 echo ""
@@ -476,17 +510,26 @@ echo ""
 echo "2. Reload your shell or source config:"
 echo "   source ~/.bashrc  # or ~/.zshrc"
 echo ""
-echo "3. Navigate to any repository:"
+echo "3. Navigate to parent directory:"
 echo "   cd $PARENT_DIR"
 echo "   # Scripts auto-loaded via direnv!"
 echo ""
-echo "4. Use workspace scripts:"
+echo "4. Use TypeScript scripts:"
+echo "   cd workspace"
+echo "   npm run sync              # Repository sync with AI commits"
+echo "   npm run sync -- --help    # Show help"
+echo ""
+echo "   Or use the wrapper (after direnv loads):"
+echo "   ts-sync                   # Direct command"
+echo ""
+echo "5. Legacy bash scripts still available:"
 echo "   workspace-bootstrap.sh                       # This script"
 echo "   workspace-publish.sh deepstaging             # Publish to local NuGet"
 echo "   workspace-discover-dependents.sh Deepstaging # Find dependencies"
 echo ""
-echo "5. Check available documentation:"
+echo "6. Check documentation:"
 echo "   - Permanent:  workspace/.docs/"
-echo "   - Session:    workspace/.session/"
+echo "   - TypeScript: workspace/scripts-ts/README.md"
+echo "   - Migration:  workspace/.docs/TYPESCRIPT_MIGRATION.md"
 echo ""
 echo "Happy coding! 🎉"

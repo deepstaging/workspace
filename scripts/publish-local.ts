@@ -1,0 +1,1 @@
+../scripts-ts/publish-local.ts

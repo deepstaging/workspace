@@ -6,7 +6,11 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx",
-    "sync": "tsx scripts-ts/sync-repos.ts"
+    "sync-repos": "tsx scripts-ts/sync-repos.ts",
+    "discover-dependents": "tsx scripts-ts/discover-dependents.ts",
+    "publish": "tsx scripts-ts/publish.ts",
+    "publish-local": "tsx scripts-ts/publish-local.ts",
+    "new-project": "tsx scripts-ts/new-project.ts"
   },
   "bin": {
     "workspace-sync": "./scripts/sync-repos.js"
