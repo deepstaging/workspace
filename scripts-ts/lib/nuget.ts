@@ -24,6 +24,14 @@ export async function pushToLocalFeed(
   const destPath = path.join(feedPath, fileName);
 
   await fs.copyFile(packagePath, destPath);
+  
+  // Clear NuGet caches to ensure fresh package is used
+  try {
+    execSync('dotnet nuget locals all --clear', { stdio: 'pipe' });
+  } catch (error) {
+    // Non-critical if cache clear fails
+  }
+  
   console.log(`📦 Pushed: ${fileName}`);
 }
 
