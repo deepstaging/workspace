@@ -58,6 +58,7 @@ console.log(chalk.bold('Environment Variables:'));
 
 const requiredEnvVars = [
   'DEEPSTAGING_ORG_ROOT',
+  'DEEPSTAGING_ORG_NAME',
   'DEEPSTAGING_WORKSPACE_DIR',
   'DEEPSTAGING_REPOSITORIES_DIR',
   'DEEPSTAGING_ARTIFACTS_DIR',
