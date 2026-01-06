@@ -49,13 +49,10 @@ function getCommandVersion(cmd: string, args: string = '--version'): string {
 }
 
 console.log(chalk.bold.cyan('\n🔍 Deepstaging Environment Check\n'));
-console.log(chalk.gray('Validating workspace configuration...\n'));
 
 // ============================================================================
 // 1. Environment Variables
 // ============================================================================
-
-console.log(chalk.bold('Environment Variables:'));
 
 const requiredEnvVars = [
   'DEEPSTAGING_ORG_ROOT',
@@ -90,8 +87,6 @@ for (const envVar of requiredEnvVars) {
 // ============================================================================
 // 2. Directory Structure
 // ============================================================================
-
-console.log(chalk.bold('\nDirectory Structure:'));
 
 const orgRoot = process.env.DEEPSTAGING_ORG_ROOT;
 const workspaceDir = process.env.DEEPSTAGING_WORKSPACE_DIR;
@@ -163,8 +158,6 @@ if (orgRoot) {
 // 3. Required Tools
 // ============================================================================
 
-console.log(chalk.bold('\nRequired Tools:'));
-
 const requiredTools = [
   { cmd: 'node', versionArgs: '--version' },
   { cmd: 'npm', versionArgs: '--version' },
@@ -187,8 +180,6 @@ for (const tool of requiredTools) {
 // 4. Optional Tools
 // ============================================================================
 
-console.log(chalk.bold('\nOptional Tools:'));
-
 const optionalTools = [
   { cmd: 'direnv', versionArgs: 'version' },
   { cmd: 'jq', versionArgs: '--version' },
@@ -209,8 +200,6 @@ for (const tool of optionalTools) {
 // ============================================================================
 // 5. Direnv Status
 // ============================================================================
-
-console.log(chalk.bold('\nDirenv Status:'));
 
 if (checkCommand('direnv')) {
   // Check if direnv hook is loaded (best effort)
@@ -236,8 +225,6 @@ if (checkCommand('direnv')) {
 // ============================================================================
 // 6. PATH Configuration
 // ============================================================================
-
-console.log(chalk.bold('\nPATH Configuration:'));
 
 const pathDirs = process.env.PATH?.split(':') || [];
 
