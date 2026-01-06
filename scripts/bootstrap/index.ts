@@ -25,11 +25,13 @@ import { copyEnvrcIfMissing, copyAgentsGuide, loadEnvFromEnvrc, validateEnvironm
 import { checkDependencies, installMissingDependencies, installNpmDependencies, buildTypeScript, checkGitHubAuth } from '../lib/bootstrap/dependencies.js';
 import { createDirectoryStructure } from '../lib/bootstrap/directories.js';
 import { discoverAndCloneRepositories } from '../lib/bootstrap/repositories.js';
-import { generateScriptAliases, configureDirenv, runEnvironmentCheck, printSuccessMessage } from '../lib/bootstrap/finalize.js';
+import { generateScriptAliases, configureDirenv, runEnvironmentCheck, displayHints, printSuccessMessage } from '../lib/bootstrap/finalize.js';
+import { BootstrapContext } from '../lib/bootstrap/types.js';
 
 async function main() {
   const args = process.argv.slice(2);
   const autoYes = args.includes('--yes') || args.includes('-y');
+  const ctx = new BootstrapContext();
 
   console.log(chalk.bold.blue('🚀 Deepstaging Workspace Bootstrap'));
   console.log(chalk.blue('═'.repeat(40)));
@@ -63,7 +65,7 @@ async function main() {
     installNpmDependencies(env.DEEPSTAGING_WORKSPACE_DIR);
 
     // Step 5: Create directory structure
-    createDirectoryStructure(env);
+    createDirectoryStructure(env, ctx);
 
     // Step 6: Build TypeScript
     buildTypeScript(env.DEEPSTAGING_WORKSPACE_DIR);
@@ -82,6 +84,9 @@ async function main() {
 
     // Step 11: Run environment check
     runEnvironmentCheck(env);
+
+    // Step 12: Display collected hints
+    displayHints(ctx);
 
     // Success!
     printSuccessMessage();

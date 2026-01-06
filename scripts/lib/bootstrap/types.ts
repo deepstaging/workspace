@@ -19,3 +19,18 @@ export interface DependencyCheck {
   missing: string[];
   installed: string[];
 }
+
+export interface BootstrapHint {
+  type: 'info' | 'warning' | 'action';
+  title: string;
+  message: string;
+  commands?: string[];
+}
+
+export class BootstrapContext {
+  hints: BootstrapHint[] = [];
+  
+  addHint(hint: BootstrapHint): void {
+    this.hints.push(hint);
+  }
+}

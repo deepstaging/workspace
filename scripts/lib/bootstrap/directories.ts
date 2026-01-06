@@ -6,9 +6,9 @@ import { execSync } from 'child_process';
 import { existsSync, readdirSync, cpSync } from 'fs';
 import { join } from 'path';
 import chalk from 'chalk';
-import { DeepstagingEnv } from './types.js';
+import { DeepstagingEnv, BootstrapContext } from './types.js';
 
-export function createDirectoryStructure(env: DeepstagingEnv): void {
+export function createDirectoryStructure(env: DeepstagingEnv, ctx: BootstrapContext): void {
   console.log(chalk.blue('📁 Setting up directory structure...\n'));
 
   const dirsToCreate = [
@@ -25,12 +25,12 @@ export function createDirectoryStructure(env: DeepstagingEnv): void {
     }
   }
 
-  initializeNuGetFeed(env);
+  initializeNuGetFeed(env, ctx);
   copyAgentDirectories(env);
   console.log();
 }
 
-function initializeNuGetFeed(env: DeepstagingEnv): void {
+function initializeNuGetFeed(env: DeepstagingEnv, ctx: BootstrapContext): void {
   if (!existsSync(env.DEEPSTAGING_LOCAL_NUGET_FEED)) {
     console.log(chalk.cyan(`\n  Initializing local NuGet feed...`));
     execSync(`mkdir -p "${env.DEEPSTAGING_LOCAL_NUGET_FEED}"`, { stdio: 'inherit' });
@@ -80,13 +80,20 @@ function initializeNuGetFeed(env: DeepstagingEnv): void {
           }
         }
         
-        console.log(chalk.yellow(`\n⚠️  NuGet source "${sourceName}" exists with different path:`));
-        console.log(chalk.gray(`   Current: ${existingPath}`));
-        console.log(chalk.gray(`   Desired: ${env.DEEPSTAGING_LOCAL_NUGET_FEED}`));
-        console.log(chalk.gray(`\n   To update, run:`));
-        console.log(chalk.cyan(`   dotnet nuget remove source ${sourceName}`));
-        console.log(chalk.cyan(`   dotnet nuget add source "${env.DEEPSTAGING_LOCAL_NUGET_FEED}" --name "${sourceName}"`));
-        console.log();
+        console.log(chalk.yellow(`⚠️  NuGet source "${sourceName}" exists with different path`));
+        
+        // Add hint to be shown at the end
+        ctx.addHint({
+          type: 'action',
+          title: 'NuGet Source Path Mismatch',
+          message: `The NuGet source "${sourceName}" points to a different location:\n` +
+                   `   Current: ${existingPath}\n` +
+                   `   Desired: ${env.DEEPSTAGING_LOCAL_NUGET_FEED}`,
+          commands: [
+            `dotnet nuget remove source ${sourceName}`,
+            `dotnet nuget add source "${env.DEEPSTAGING_LOCAL_NUGET_FEED}" --name "${sourceName}"`
+          ]
+        });
       }
     }
   } catch (error) {

@@ -4,7 +4,7 @@
 
 import { execSync } from 'child_process';
 import chalk from 'chalk';
-import { DeepstagingEnv } from './types.js';
+import { DeepstagingEnv, BootstrapContext } from './types.js';
 
 export function generateScriptAliases(env: DeepstagingEnv): void {
   console.log(chalk.blue('🔗 Generating script aliases...\n'));
@@ -39,6 +39,51 @@ export function runEnvironmentCheck(env: DeepstagingEnv): void {
     console.log(chalk.yellow('\n⚠️  Environment check found issues'));
     console.log(chalk.cyan('   Review the output above for details\n'));
   }
+}
+
+export function displayHints(ctx: BootstrapContext): void {
+  if (ctx.hints.length === 0) {
+    return;
+  }
+  
+  console.log(chalk.bold.yellow('\n⚠️  Important Notes:\n'));
+  console.log(chalk.gray('='.repeat(80)));
+  
+  for (const hint of ctx.hints) {
+    console.log();
+    
+    let icon = '';
+    let titleColor = chalk.white;
+    
+    switch (hint.type) {
+      case 'info':
+        icon = chalk.blue('ℹ');
+        titleColor = chalk.blue;
+        break;
+      case 'warning':
+        icon = chalk.yellow('⚠');
+        titleColor = chalk.yellow;
+        break;
+      case 'action':
+        icon = chalk.cyan('→');
+        titleColor = chalk.cyan;
+        break;
+    }
+    
+    console.log(`${icon} ${titleColor.bold(hint.title)}`);
+    console.log(chalk.gray(hint.message));
+    
+    if (hint.commands && hint.commands.length > 0) {
+      console.log(chalk.gray('\n  To fix, run:'));
+      for (const cmd of hint.commands) {
+        console.log(chalk.cyan(`  ${cmd}`));
+      }
+    }
+  }
+  
+  console.log();
+  console.log(chalk.gray('='.repeat(80)));
+  console.log();
 }
 
 export function printSuccessMessage(): void {
