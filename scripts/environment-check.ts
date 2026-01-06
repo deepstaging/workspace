@@ -301,7 +301,7 @@ for (const [category, categoryChecks] of categorizedChecks) {
     
     console.log(`  ${icon} ${color.bold(check.name)}: ${color(check.message)}`);
     if (check.details) {
-      console.log(`    ${chalk.gray('→ ' + check.details)}`);
+      console.log(`    ${chalk.white('→ ' + check.details)}`);
     }
   }
 }
