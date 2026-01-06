@@ -89,8 +89,12 @@ export function displayHints(ctx: BootstrapContext): void {
 export function printSuccessMessage(): void {
   console.log(chalk.bold.green('✨ Bootstrap complete!\n'));
   console.log(chalk.cyan('Next steps:'));
-  console.log(chalk.white('  1. Run `direnv reload` or restart your shell'));
-  console.log(chalk.white('  2. Use workspace commands like `repositories-sync`'));
-  console.log(chalk.white('  3. Use repo commands like `deepstaging-publish`'));
-  console.log(chalk.white('  4. Run `environment-check` anytime to verify setup\n'));
+  console.log(chalk.white('  1. Enable direnv shell integration (if not already done):'));
+  console.log(chalk.dim('     For zsh, add to ~/.zshrc:  ') + chalk.cyan('eval "$(direnv hook zsh)"'));
+  console.log(chalk.dim('     For bash, add to ~/.bashrc: ') + chalk.cyan('eval "$(direnv hook bash)"'));
+  console.log(chalk.dim('     Then restart your shell or run: ') + chalk.cyan('source ~/.zshrc'));
+  console.log(chalk.white('  2. Run `direnv reload` or `cd` out and back in'));
+  console.log(chalk.white('  3. Use workspace commands like `repositories-sync`'));
+  console.log(chalk.white('  4. Use repo commands like `deepstaging-publish`'));
+  console.log(chalk.white('  5. Run `environment-check` anytime to verify setup\n'));
 }
