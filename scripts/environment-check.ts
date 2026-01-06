@@ -202,34 +202,52 @@ for (const tool of optionalTools) {
 // ============================================================================
 
 if (checkCommand('direnv')) {
-  // Check if direnv hook is loaded (best effort)
-  const direnvDir = process.env.DIRENV_DIR;
-  if (direnvDir) {
+  // Check if direnv hook is loaded
+  // Check for both DIRENV_DIR and a function that direnv creates
+  const direnvActive = process.env.DIRENV_DIR || 
+                       (typeof process.env.DIRENV_WATCHES !== 'undefined');
+  
+  if (direnvActive) {
     addCheck('Direnv', 'direnv hook', 'pass', 'Active in current shell');
   } else {
     // Detect shell and provide appropriate instructions
     const shell = process.env.SHELL || '';
     let shellName = 'bash';
     let configFile = '~/.bashrc';
+    let configFilePath = process.env.HOME + '/.bashrc';
     
     if (shell.includes('zsh')) {
       shellName = 'zsh';
       configFile = '~/.zshrc';
+      configFilePath = process.env.HOME + '/.zshrc';
     } else if (shell.includes('fish')) {
       shellName = 'fish';
       configFile = '~/.config/fish/config.fish';
+      configFilePath = process.env.HOME + '/.config/fish/config.fish';
     }
     
     const hookCommand = shellName === 'fish' 
       ? `direnv hook fish | source`
       : `eval "$(direnv hook ${shellName})"`;
     
-    const appendCommand = shellName === 'fish'
-      ? `echo '${hookCommand}' >> ${configFile}`
-      : `echo '${hookCommand}' >> ${configFile}`;
+    // Check if hook is already in config file
+    let alreadyConfigured = false;
+    try {
+      const configContent = require('fs').readFileSync(configFilePath, 'utf8');
+      alreadyConfigured = configContent.includes(`direnv hook ${shellName}`);
+    } catch {
+      // File doesn't exist or can't be read
+    }
     
-    addCheck('Direnv', 'direnv hook', 'warn', 'Not active', 
-      `Run: ${appendCommand} && source ${configFile}`);
+    if (alreadyConfigured) {
+      addCheck('Direnv', 'direnv hook', 'warn', 'Configured but not active', 
+        `Restart your shell or run: source ${configFile}`);
+    } else {
+      // Use grep to avoid duplicates
+      const safeAppendCommand = `grep -qxF '${hookCommand}' ${configFile} 2>/dev/null || echo '${hookCommand}' >> ${configFile}`;
+      addCheck('Direnv', 'direnv hook', 'warn', 'Not configured', 
+        `Run: ${safeAppendCommand} && source ${configFile}`);
+    }
   }
   
   // Check if current directory is allowed

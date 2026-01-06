@@ -106,10 +106,11 @@ export function printSuccessMessage(): void {
     hookCommand = 'direnv hook fish | source';
   }
   
-  const appendCommand = `echo '${hookCommand}' >> ${configFile}`;
+  // Use grep to prevent duplicates
+  const safeAppendCommand = `grep -qxF '${hookCommand}' ${configFile} 2>/dev/null || echo '${hookCommand}' >> ${configFile}`;
   
   console.log(chalk.white('  1. Enable direnv shell integration (if not already done):'));
-  console.log(chalk.cyan(`     ${appendCommand}`));
+  console.log(chalk.cyan(`     ${safeAppendCommand}`));
   console.log(chalk.cyan(`     source ${configFile}`));
   console.log(chalk.white('  2. Run `direnv reload` or `cd` out and back in'));
   console.log(chalk.white('  3. Use workspace commands like `repositories-sync`'));
