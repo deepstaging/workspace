@@ -1,213 +1,329 @@
 # Deepstaging Workspace
 
-This repository contains workspace configuration and tooling for the Deepstaging ecosystem.
+**A powerful control plane for multi-repository .NET development.**
 
-## Purpose
+Create production-ready repositories from templates, orchestrate builds, manage dependencies, and automate workflows—all from a single command center.
 
-This is the **control plane** for multi-repository development. Clone this repo, run bootstrap scripts, and work across all Deepstaging repositories with shared context.
+---
 
-## Directory Structure
+## 🚀 Why Use This Workspace?
 
-**After bootstrap:**
-```
-~/code/org/deepstaging/              # Parent directory (not a git repo)
-├── workspace/           # This repository (git)
-│   ├── .claude/                     # Claude agent state (gitignored)
-│   ├── .copilot/                    # GitHub Copilot state (gitignored)  
-│   ├── .cursor/                     # Cursor editor state (gitignored)
-│   ├── .docs/                       # Permanent workspace knowledge (tracked)
-│   ├── .session/                    # Temporary session notes (gitignored)
-│   ├── .copilot-instructions.md     # Agent instructions
-│   ├── scripts/                     # Cross-repo automation
-│   │   └── bootstrap.sh             # Setup script
-│   └── README.md                    # This file
-├── deepstaging/                     # Core infrastructure (git)
-├── effects/                         # Effects framework (git)
-└── github-profile/                  # GitHub org profile (git)
+### 1. **Template-Driven Repository Creation**
+
+Create complete, production-ready repositories in seconds:
+
+```bash
+workspace-repository-create
 ```
 
-## Getting Started
+**Available Templates:**
+- 🔧 **deepstaging-roslyn** - Complete Roslyn tooling suite (analyzers, generators, code fixes, tests)
+- 🎯 More templates coming soon
+
+Each template generates:
+- ✅ Full project structure with best practices
+- ✅ Pre-configured analyzers and source generators
+- ✅ Test projects with examples
+- ✅ NuGet packaging setup
+- ✅ Git repository initialized
+- ✅ Documentation scaffolding
+- ✅ Workspace integration scripts (generated from templates)
+
+### 2. **Zero-Config Development Environment**
+
+Bootstrap once, work anywhere:
+- **direnv** auto-loads tools and commands
+- **TypeScript automation** with type safety
+- **Local NuGet feed** for testing packages
+- **Interactive CLI** with beautiful terminal UI
+
+### 3. **Multi-Repository Orchestration**
+
+Manage multiple repositories from one place:
+- Build, test, and publish across all repos
+- Track package dependencies
+- AI-powered commit messages
+- Batch operations with interactive selection
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-**Homebrew** (macOS/Linux package manager):
+**Homebrew** (macOS/Linux):
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-### 1. Clone this workspace repository
+### Installation
 
 ```bash
+# 1. Clone workspace
 mkdir -p ~/code/org/deepstaging
 cd ~/code/org/deepstaging
-git clone git@github.com:yourorg/workspace.git
+git clone git@github.com:deepstaging/workspace.git
 cd workspace
-```
 
-### 2. Run bootstrap script
-
-```bash
+# 2. Run bootstrap (installs everything)
 ./scripts/bootstrap.sh
+
+# 3. Activate direnv
+eval "$(direnv hook zsh)"  # Add to ~/.zshrc
+source ~/.zshrc
+direnv allow
 ```
 
-This will:
-- Check for required dependencies (installs via `Brewfile` if missing)
-- **Install Node.js and npm packages for TypeScript scripts**
-- Copy `.envrc` to parent directory (enables cross-repo script aliases via direnv)
-- Discover all Deepstaging repositories via GitHub CLI
-- Let you clone all or select individual repos
-- Set up local NuGet feed directory
-- Configure direnv for automatic environment loading
+**What bootstrap installs:**
+- Required CLI tools (`gh`, `direnv`, `node`, `jq`, `ripgrep`, `fzf`)
+- Deepstaging.Templates for scaffolding
+- npm packages for TypeScript automation
+- Local NuGet feed configuration
 
-**What gets installed (via Brewfile):**
-- `gh` - GitHub CLI for repository operations
-- `direnv` - Auto-loads environment/scripts per directory
-- `jq` - JSON parsing for automation
-- `ripgrep` - Fast code search
-- `node` - JavaScript runtime for TypeScript scripts
-- `fzf` - Interactive selection menus
-- Optional: `copilot-cli` - AI-powered commit messages
-
-### 3. Reload your shell
-
-The bootstrap script sets up direnv, but you need to ensure the hook is loaded:
+### Create Your First Repository
 
 ```bash
-# Add to your shell config (~/.bashrc or ~/.zshrc) if not already there:
-eval "$(direnv hook bash)"  # or zsh
+# Interactive - choose template and configure
+workspace-repository-create
 
-# Then reload:
-source ~/.bashrc  # or ~/.zshrc
+# Direct - specify template and name
+workspace-repository-create -t deepstaging-roslyn -n MyAwesomeTool
 ```
 
-### 4. Start developing
+This generates a complete repository at `../MyAwesomeTool/` with:
+- Analyzer project (diagnostics and rules)
+- Generator project (source generation)
+- CodeFixes project (quick fixes)
+- Test project (unit tests with examples)
+- Contracts project (attributes/interfaces)
+- NuGet packaging configured
 
-Navigate to any repository and direnv automatically loads the environment:
+### Build & Publish
 
 ```bash
-cd ../deepstaging
-# Scripts are now available as commands!
+cd ../MyAwesomeTool
+
+# Build and test
+dotnet build
+dotnet test
+
+# Publish to local NuGet feed (for testing)
+workspace-packages-publish MyAwesomeTool
+
+# Publish to NuGet.org (manual - use dotnet CLI)
+dotnet nuget push ./artifacts/**/*.nupkg --source https://api.nuget.org/v3/index.json --api-key YOUR_KEY
 ```
 
-**Use TypeScript scripts for AI-powered workflows:**
+---
+
+## Core Commands
+
+All commands available after direnv activation:
+
+### Repository Management
+
 ```bash
-cd workspace
-npm run sync              # Repository sync with AI commits
-npm run sync -- --help    # Show help
+# Create new repository from template
+workspace-repository-create                    # Interactive
+workspace-repository-create -t deepstaging-roslyn -n MyTool
 
-# Or use the wrapper (after direnv loads):
-ts-sync                   # Direct command
+# Sync repositories with GitHub
+workspace-repositories-sync                    # Pull latest changes
+workspace-repositories-sync --push            # Commit and push all
+
+# Show package dependency graph
+workspace-dependents-discover
 ```
 
-**Benefits of direnv integration:**
-- 🚀 Automatic Homebrew environment loading
-- 📝 Script commands from all repositories
-- 🔧 TypeScript workspace scripts in PATH
-- 🤖 AI-powered commit messages via GitHub Copilot
-- 🔄 Environment loads/unloads as you navigate directories
+### Package Management
 
-## TypeScript Scripts 🆕
-
-The workspace now uses **TypeScript for scripting** instead of bash, providing:
-
-### Why TypeScript?
-
-- ✅ **Type safety** - Catch errors at compile time
-- ✅ **Better async** - Clean async/await syntax (familiar to C# devs)
-- ✅ **Rich libraries** - Professional terminal UI (inquirer, ora, chalk)
-- ✅ **No stdin/tty issues** - Interactive prompts work reliably
-- ✅ **Familiar syntax** - Interfaces, classes, generics like C#
-
-### Available Scripts
-
-**create-repository** - Create new repository from templates:
 ```bash
-cd workspace
-npm run create-repository              # Interactive mode
-npm run create-repository -- --help    # Show options
+# Publish packages to local feed (for testing)
+workspace-packages-publish MyAwesomeTool
 
-# Or use the wrapper (after direnv loads):
-workspace-create-repository           # Interactive
-workspace-create-repository -t deepstaging-roslyn -n MyTool  # Direct
+# Scan licenses
+workspace-nuget-licenses-scan
 ```
 
-Features:
-- Auto-discovers installed dotnet templates
-- Interactive template selection
-- Generates repository as sibling to workspace
-- Initializes git with initial commit
-- Beautiful terminal UI with spinners and prompts
+**Note:** Publishing to NuGet.org should be done via CI/CD or manually with `dotnet nuget push`.
 
-**sync-repos** - AI-powered repository synchronization:
+### Project Management
+
 ```bash
-cd workspace
-npm run sync              # Run with AI commit messages
-npm run sync -- --help    # Show options
+# Add new project to existing repository
+workspace-project-create
+
+# Generate .slnx solution files in workspace root
+workspace-solutions-symlink
 ```
 
-Features:
-- Scans all repositories for changes
-- Interactive commit strategy selection
-- **AI-generated commit messages** via GitHub Copilot CLI
-- Beautiful terminal UI with spinners and prompts
-- Type-safe git operations
+### Maintenance
 
-### Development
-
-**Run TypeScript directly** (no compilation needed):
 ```bash
-npm run sync
+# Clear build artifacts
+workspace-caches-purge
+
+# Check environment health
+workspace-environment-check
+
+# Re-run bootstrap
+workspace-refresh
 ```
 
-**Compile to JavaScript**:
+---
+
+## Templates
+
+### deepstaging-roslyn
+
+Complete Roslyn tooling project with everything you need:
+
+**Generated Structure:**
+```
+MyAwesomeTool/
+├── src/
+│   └── MyAwesomeTool/
+│       ├── MyAwesomeTool.Analyzers/      # Diagnostic rules
+│       ├── MyAwesomeTool.Generators/     # Source generators
+│       ├── MyAwesomeTool.CodeFixes/      # Quick fixes
+│       ├── MyAwesomeTool.Contracts/      # Public API
+│       └── MyAwesomeTool.Nuget/          # Package bundling
+├── tests/
+│   └── MyAwesomeTool.Tests/              # Unit tests
+├── .gitignore
+└── README.md
+```
+
+**Features:**
+- Pre-configured analyzer diagnostics
+- Source generator scaffolding
+- Code fix provider templates
+- Test helpers and examples
+- NuGet packaging with analyzers bundle
+- Following Deepstaging conventions
+
+### Installing Templates Manually
+
+Templates are installed during bootstrap, but you can update them:
+
 ```bash
-npm run build
-./scripts/sync-repos.js
+cd [path-to-templates-repo]
+dotnet pack
+dotnet new install ./bin/Deepstaging.Templates.*.nupkg
 ```
 
-**Add new scripts**:
-1. Create `.ts` file in `scripts-ts/`
-2. Use shared libraries from `scripts-ts/lib/`
-3. Add npm script to `package.json`
+---
 
-See `scripts-ts/README.md` and `.docs/TYPESCRIPT_MIGRATION.md` for details.
+## Architecture
 
-## Key Concepts
+### Directory Structure
 
-### Parent Directory is NOT a Git Repo
+```
+~/code/org/deepstaging/
+├── workspace/                       # This repo (control plane)
+│   ├── .docs/                      # Permanent knowledge base
+│   ├── scripts/                    # TypeScript automation
+│   ├── .envrc                      # Direnv configuration
+│   └── package.json                # npm dependencies
+│
+└── [your-repositories]/             # Created via workspace-repository-create
+    ├── MyAwesomeTool/
+    ├── AnotherProject/
+    └── ...
+```
 
-The parent directory (`~/code/org/deepstaging/`) is just a container. Only the workspace and individual repos are git repositories.
+### Key Concepts
 
-### Workspace Repository = Control Plane
+**Workspace = Control Plane**
+- Centralized automation and tooling
+- Template-driven repository scaffolding
+- AI agent state (`.claude/`, `.copilot/`, `.cursor/`)
+- Knowledge base (`.docs/`)
 
-This repository (`workspace/`) contains:
-- **`.docs/`** - Permanent workspace knowledge (conventions, guides, architecture)
-- **`.session/`** - Temporary working notes (gitignored)
-- **Agent directories** - Centralized AI agent state and memory
-- **`scripts/`** - Bootstrap, build, test, publish automation
-
-### Individual Repositories = Clean and Portable
-
-Each repo (`deepstaging/`, `effects/`, etc.):
+**Generated Repositories = Independent & Portable**
+- Complete, standalone projects
+- Production-ready code
 - Can be cloned and used independently
-- Contains only production code and configuration
-- Has its own `docs/` for user-facing documentation
-- Does **not** contain agent state (`.claude/`, etc.)
+- Follow Deepstaging conventions
 
-## Repositories in Ecosystem
+**Templates = Battle-Tested Scaffolding**
+- Proven project structures
+- Best practices built-in
+- Pre-configured tooling
+- Instant productivity
 
-- **deepstaging** - Core Roslyn infrastructure (queries, generators, testing)
-- **effects** - Effects analysis framework
-- **github-profile** - GitHub organization profile and documentation
+---
+
+## TypeScript Automation
+
+All workspace scripts use TypeScript for:
+- ✅ Type safety - Catch errors before runtime
+- ✅ Rich libraries - Professional terminal UI
+- ✅ Async/await - Clean asynchronous code
+- ✅ Familiar syntax - Like C# with interfaces, classes, generics
+
+**Run scripts via npm:**
+```bash
+npm run repository-create
+npm run packages-publish
+npm run repositories-sync
+```
+
+**Or use direnv aliases:**
+```bash
+workspace-repository-create
+workspace-packages-publish
+workspace-repositories-sync
+```
+
+---
 
 ## Documentation
 
-- **Workspace knowledge**: `.docs/` - Conventions, guides, architecture (git tracked)
-- **Session notes**: `.session/` - Temporary working notes (gitignored)
-- **Package docs**: `../deepstaging/docs/`, `../effects/docs/` - User-facing documentation
+### Core Documentation
+- **[WRAPPER_SCRIPTS.md](docs/WRAPPER_SCRIPTS.md)** - How wrapper scripts are generated for new repositories
+- **Workspace Docs**: `.docs/` - Architecture, conventions, guides
+- **Session Notes**: `.session/` - Temporary working notes (gitignored)
+- **Generated Repos**: Each repo has its own user-facing documentation
 
-## Agent Configuration
+---
 
-See `.copilot-instructions.md` for agent behavior and conventions.
-All agents should use the workspace-level configuration to maintain context across repositories.
-test change
+## AI Agent Configuration
+
+See `.copilot-instructions.md` for agent behavior and workspace conventions.
+
+All AI agents (Claude, Copilot, Cursor) share workspace context for consistency.
+
+---
+
+## Contributing
+
+To add new templates or improve automation:
+
+1. Create templates in a separate repository
+2. Package as `dotnet new` templates
+3. Update bootstrap to install them
+4. Add TypeScript scripts to `scripts/`
+5. Document in `.docs/`
+
+---
+
+## License
+
+All Deepstaging projects are licensed under GPL-v3. Here's what that means in plain English:
+
+**You can:**
+- Use this workspace and all generated code for anything (personal projects, work, commercial products)
+- Modify it however you want
+- Share it with others
+
+**But if you distribute your code that uses this:**
+- You must share your source code too
+- Your code must also be GPL-v3
+- You can't add restrictions that GPL-v3 doesn't have
+
+**Why GPL-v3?** We want this to stay open source. If you build something cool with it, others should be able to learn from and improve your work too.
+
+**Internal use is fine:** If you're using this at work and not distributing your software outside your company, you don't have to share anything.
+
+See the [LICENSE](../LICENSE) file for the full legal text.
