@@ -11,6 +11,15 @@ import chalk from 'chalk';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+interface TemplateParameter {
+  name: string;
+  shortName?: string;
+  type: 'string' | 'bool' | 'choice';
+  description: string;
+  defaultValue?: string;
+  choices?: string[];
+}
+
 interface DotnetTemplate {
   templateName: string;
   shortName: string;
@@ -22,8 +31,7 @@ interface CreateRepositoryOptions {
   template?: string;
   name?: string;
   noGit?: boolean;
-  withDocs?: boolean;
-  noSample?: boolean;
+  templateParams?: Record<string, any>;
 }
 
 function kebabCase(str: string): string {
@@ -38,6 +46,80 @@ function pascalCase(str: string): string {
     .split(/[-_\s]+/)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join('');
+}
+
+function getTemplateParameters(templateShortName: string): TemplateParameter[] {
+  try {
+    const output = execSync(`dotnet new ${templateShortName} --help`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    const parameters: TemplateParameter[] = [];
+    const lines = output.split('\n');
+    
+    let inTemplateOptions = false;
+    let currentParam: Partial<TemplateParameter> | null = null;
+    
+    for (const line of lines) {
+      // Detect "Template options:" section
+      if (line.trim() === 'Template options:') {
+        inTemplateOptions = true;
+        continue;
+      }
+      
+      // Stop at next major section
+      if (inTemplateOptions && line.trim() && !line.startsWith(' ')) {
+        break;
+      }
+      
+      if (!inTemplateOptions) continue;
+      
+      // Parse parameter line (starts with - or --)
+      if (line.match(/^\s+(-\w+,?\s*)?--(\w+)/)) {
+        // Save previous parameter if exists
+        if (currentParam?.name) {
+          parameters.push(currentParam as TemplateParameter);
+        }
+        
+        // Parse new parameter
+        const match = line.match(/^\s+(?:-(\w+),?\s*)?--(\w+)(?:\s+<([^>]+)>)?(?:\s+(.*))?/);
+        if (match) {
+          currentParam = {
+            shortName: match[1],
+            name: match[2],
+            description: match[4] || ''
+          };
+        }
+      } else if (currentParam && line.trim()) {
+        // Continue description or parse Type/Default/Choices
+        const typeMatch = line.match(/^\s+Type:\s*(\w+)/);
+        const defaultMatch = line.match(/^\s+Default:\s*(.+)/);
+        const choiceMatch = line.match(/^\s+(\w+)\s+(.+)/);
+        
+        if (typeMatch) {
+          currentParam.type = typeMatch[1] as any;
+        } else if (defaultMatch) {
+          currentParam.defaultValue = defaultMatch[1].trim();
+        } else if (currentParam.type === 'choice' && choiceMatch && line.trim().match(/^\w/)) {
+          if (!currentParam.choices) currentParam.choices = [];
+          currentParam.choices.push(choiceMatch[1]);
+        } else {
+          // Continuation of description
+          currentParam.description += ' ' + line.trim();
+        }
+      }
+    }
+    
+    // Save last parameter
+    if (currentParam?.name) {
+      parameters.push(currentParam as TemplateParameter);
+    }
+    
+    return parameters;
+  } catch (error) {
+    return [];
+  }
 }
 
 function discoverTemplates(): DotnetTemplate[] {
@@ -146,19 +228,45 @@ async function promptForName(): Promise<string> {
   return name.trim();
 }
 
-async function promptForOptions(): Promise<{ withDocs: boolean; noSample: boolean }> {
-  const options = await checkbox({
-    message: 'Template options:',
-    choices: [
-      { name: 'Include DocFX documentation site', value: 'withDocs', checked: false },
-      { name: 'Exclude sample consumer project', value: 'noSample', checked: false }
-    ]
-  });
-
-  return {
-    withDocs: options.includes('withDocs'),
-    noSample: options.includes('noSample')
-  };
+async function promptForTemplateOptions(parameters: TemplateParameter[]): Promise<Record<string, any>> {
+  const options: Record<string, any> = {};
+  
+  // Filter out common/internal parameters we don't want to prompt for
+  const relevantParams = parameters.filter(p => 
+    !['Framework', 'no-restore', 'no-https', 'no-update-check'].includes(p.name)
+  );
+  
+  if (relevantParams.length === 0) {
+    return options;
+  }
+  
+  console.log(chalk.bold('\n📋 Template Options:\n'));
+  
+  for (const param of relevantParams) {
+    if (param.type === 'bool') {
+      const { confirm } = await import('@inquirer/prompts');
+      const value = await confirm({
+        message: param.description || param.name,
+        default: param.defaultValue === 'true'
+      });
+      options[param.name] = value;
+    } else if (param.type === 'choice' && param.choices) {
+      const value = await select({
+        message: param.description || param.name,
+        choices: param.choices.map(c => ({ name: c, value: c })),
+        default: param.defaultValue
+      });
+      options[param.name] = value;
+    } else if (param.type === 'string') {
+      const value = await input({
+        message: param.description || param.name,
+        default: param.defaultValue
+      });
+      if (value) options[param.name] = value;
+    }
+  }
+  
+  return options;
 }
 
 async function createRepository(options: CreateRepositoryOptions): Promise<void> {
@@ -181,18 +289,15 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     options.name = await promptForName();
   }
 
-  // 3. Get template options if not provided and not already specified via CLI
-  if (options.withDocs === undefined && options.noSample === undefined) {
-    const templateOptions = await promptForOptions();
-    options.withDocs = templateOptions.withDocs;
-    options.noSample = templateOptions.noSample;
-  } else {
-    // Set defaults for undefined options
-    options.withDocs = options.withDocs ?? false;
-    options.noSample = options.noSample ?? false;
+  // 3. Introspect template parameters
+  const templateParams = getTemplateParameters(options.template);
+  
+  // 4. Prompt for template options if not provided via CLI
+  if (!options.templateParams || Object.keys(options.templateParams).length === 0) {
+    options.templateParams = await promptForTemplateOptions(templateParams);
   }
 
-  // 4. Calculate paths
+  // 5. Calculate paths
   const orgRoot = process.env.DEEPSTAGING_ORG_ROOT || path.resolve(__dirname, '../..');
   const repositoriesDir = process.env.DEEPSTAGING_REPOSITORIES_DIR || path.join(orgRoot, 'repositories');
   const repoName = options.name;
@@ -201,41 +306,52 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
 
   console.log(chalk.dim(`\n📁 Target: ${repoDir}\n`));
 
-  // 5. Check if directory exists
+  // 6. Check if directory exists
   if (fs.existsSync(repoDir)) {
     console.log(chalk.red(`❌ Directory already exists: ${repoDir}`));
     process.exit(1);
   }
 
-  // 6. Build dotnet new command
+  // 7. Build dotnet new command
   let command = `dotnet new ${options.template} -n ${repoName} -o "${repoDir}"`;
   
-  // Add OrgName parameter (required from environment)
-  const orgNameForNamespace = process.env.DEEPSTAGING_ORG_NAME;
-  if (!orgNameForNamespace) {
-    console.log(chalk.red('❌ DEEPSTAGING_ORG_NAME environment variable is required'));
-    console.log(chalk.dim('   Set this in your .envrc file to define your organization namespace'));
-    process.exit(1);
-  }
-  command += ` --OrgName ${orgNameForNamespace}`;
-  
-  // Add NuGetFeedName parameter for deepstaging templates
-  const orgName = process.env.DEEPSTAGING_LOCAL_NUGET_FEED_NAME || 
-                  process.env.DEEPSTAGING_GITHUB_ORG || 
-                  'deepstaging';
-  if (options.template?.includes('deepstaging')) {
-    command += ` -Nu ${orgName}`;  // -Nu flag for NuGetFeedName
+  // Add OrgName parameter if template supports it (check if it exists in template params)
+  const hasOrgNameParam = templateParams.some(p => p.name === 'OrgName');
+  if (hasOrgNameParam) {
+    const orgNameForNamespace = process.env.DEEPSTAGING_ORG_NAME;
+    if (!orgNameForNamespace) {
+      console.log(chalk.yellow('⚠️  DEEPSTAGING_ORG_NAME environment variable not set'));
+      console.log(chalk.dim('   Template will use default namespace'));
+    } else {
+      command += ` --OrgName ${orgNameForNamespace}`;
+    }
   }
   
-  // Add template-specific options (using Deepstaging template conventions)
-  if (options.noSample !== undefined) {
-    command += ` -I ${!options.noSample}`;  // -I flag: true=include, false=exclude
+  // Add NuGetFeedName parameter if template supports it
+  const hasNuGetParam = templateParams.some(p => p.name === 'NuGetFeedName');
+  if (hasNuGetParam) {
+    const orgName = process.env.DEEPSTAGING_LOCAL_NUGET_FEED_NAME || 
+                    process.env.DEEPSTAGING_GITHUB_ORG || 
+                    'deepstaging';
+    command += ` --NuGetFeedName ${orgName}`;
   }
-  if (options.withDocs) {
-    command += ' -In true';  // -In flag for IncludeDocs
+  
+  // Add user-provided template parameters
+  if (options.templateParams) {
+    for (const [key, value] of Object.entries(options.templateParams)) {
+      const param = templateParams.find(p => p.name === key);
+      if (param) {
+        const flag = param.shortName ? `-${param.shortName}` : `--${key}`;
+        if (param.type === 'bool') {
+          command += ` ${flag} ${value}`;
+        } else {
+          command += ` ${flag} ${value}`;
+        }
+      }
+    }
   }
 
-  // 7. Execute template
+  // 8. Execute template
   const spinner = ora(`Creating repository from template ${chalk.cyan(options.template)}...`).start();
   
   try {
@@ -309,11 +425,6 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
   console.log(chalk.dim(`  cd ${repoDirName}`));
   console.log(chalk.dim(`  dotnet build`));
   console.log(chalk.dim(`  dotnet test`));
-  
-  if (!options.noSample) {
-    const sampleName = `${repoName}.Sample`;
-    console.log(chalk.dim(`  dotnet run --project ${sampleName}/${sampleName}.csproj`));
-  }
 
   console.log(chalk.dim(`\n📝 The repository will be auto-discovered by direnv on next directory entry.\n`));
 }
@@ -338,27 +449,20 @@ function parseArgs(): CreateRepositoryOptions {
       case '--no-git':
         options.noGit = true;
         break;
-      case '--with-docs':
-        options.withDocs = true;
-        break;
-      case '--no-sample':
-        options.noSample = true;
-        break;
       case '--help':
       case '-h':
         console.log(chalk.bold('Usage:'));
-        console.log('  workspace-create-repository [options]\n');
+        console.log('  workspace-repository-create [options]\n');
         console.log(chalk.bold('Options:'));
         console.log('  -t, --template <name>   Template short name');
         console.log('  -n, --name <name>       Repository name (PascalCase)');
         console.log('  --no-git                Skip git initialization');
-        console.log('  --with-docs             Include DocFX documentation site');
-        console.log('  --no-sample             Exclude sample consumer project');
         console.log('  -h, --help              Show this help\n');
         console.log(chalk.bold('Examples:'));
-        console.log(chalk.dim('  workspace-create-repository'));
-        console.log(chalk.dim('  workspace-create-repository -t deepstaging-roslyn -n MyTool'));
-        console.log(chalk.dim('  workspace-create-repository --no-sample --with-docs'));
+        console.log(chalk.dim('  workspace-repository-create'));
+        console.log(chalk.dim('  workspace-repository-create -t deepstaging-roslyn -n MyTool'));
+        console.log(chalk.dim('  workspace-repository-create -t web -n MyWebApp'));
+        console.log(chalk.dim('\nTemplate-specific options will be prompted interactively.'));
         process.exit(0);
         break;
       default:
