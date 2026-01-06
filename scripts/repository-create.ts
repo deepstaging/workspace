@@ -231,9 +231,12 @@ async function promptForName(): Promise<string> {
 async function promptForTemplateOptions(parameters: TemplateParameter[]): Promise<Record<string, any>> {
   const options: Record<string, any> = {};
   
-  // Filter out common/internal parameters we don't want to prompt for
+  // Filter out parameters we don't want to prompt for:
+  // 1. Common .NET internal parameters
+  // 2. Deepstaging workspace parameters (auto-populated from environment)
   const relevantParams = parameters.filter(p => 
-    !['Framework', 'no-restore', 'no-https', 'no-update-check'].includes(p.name)
+    !['Framework', 'no-restore', 'no-https', 'no-update-check'].includes(p.name) &&
+    !p.name.startsWith('Deepstaging')
   );
   
   if (relevantParams.length === 0) {
@@ -315,25 +318,26 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
   // 7. Build dotnet new command
   let command = `dotnet new ${options.template} -n ${repoName} -o "${repoDir}"`;
   
-  // Add OrgName parameter if template supports it (check if it exists in template params)
-  const hasOrgNameParam = templateParams.some(p => p.name === 'OrgName');
-  if (hasOrgNameParam) {
+  // Add Deepstaging workspace parameters if template supports them
+  // These follow the naming convention: Deepstaging<ParameterName>
+  
+  const hasDeepstagingOrgName = templateParams.some(p => p.name === 'DeepstagingOrgName');
+  if (hasDeepstagingOrgName) {
     const orgNameForNamespace = process.env.DEEPSTAGING_ORG_NAME;
     if (!orgNameForNamespace) {
       console.log(chalk.yellow('⚠️  DEEPSTAGING_ORG_NAME environment variable not set'));
       console.log(chalk.dim('   Template will use default namespace'));
     } else {
-      command += ` --OrgName ${orgNameForNamespace}`;
+      command += ` --DeepstagingOrgName "${orgNameForNamespace}"`;
     }
   }
   
-  // Add NuGetFeedName parameter if template supports it
-  const hasNuGetParam = templateParams.some(p => p.name === 'NuGetFeedName');
-  if (hasNuGetParam) {
-    const orgName = process.env.DEEPSTAGING_LOCAL_NUGET_FEED_NAME || 
-                    process.env.DEEPSTAGING_GITHUB_ORG || 
-                    'deepstaging';
-    command += ` --NuGetFeedName ${orgName}`;
+  const hasDeepstagingFeedName = templateParams.some(p => p.name === 'DeepstagingFeedName');
+  if (hasDeepstagingFeedName) {
+    const feedName = process.env.DEEPSTAGING_LOCAL_NUGET_FEED_NAME || 
+                     process.env.DEEPSTAGING_GITHUB_ORG || 
+                     'deepstaging';
+    command += ` --DeepstagingFeedName "${feedName}"`;
   }
   
   // Add user-provided template parameters
@@ -345,7 +349,7 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
         if (param.type === 'bool') {
           command += ` ${flag} ${value}`;
         } else {
-          command += ` ${flag} ${value}`;
+          command += ` ${flag} "${value}"`;
         }
       }
     }
