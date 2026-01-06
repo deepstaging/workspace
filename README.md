@@ -66,7 +66,7 @@ git clone git@github.com:deepstaging/workspace.git
 cd workspace
 
 # 2. Run bootstrap (installs everything)
-./scripts/bootstrap.sh
+./bootstrap.sh
 
 # 3. Activate direnv
 eval "$(direnv hook zsh)"  # Add to ~/.zshrc

@@ -7,7 +7,7 @@ set -e
 # delegates to the TypeScript bootstrap script for the actual work.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_DIR="$SCRIPT_DIR"
 
 echo "🚀 Deepstaging Workspace Bootstrap"
 echo "=================================="
@@ -92,7 +92,7 @@ if ! command -v node &> /dev/null; then
             echo "✅ Dependencies installed"
             echo ""
             echo "Please run bootstrap again:"
-            echo "  ./scripts/bootstrap.sh"
+            echo "  ./bootstrap.sh"
             echo ""
             exit 0
         fi
@@ -102,7 +102,7 @@ if ! command -v node &> /dev/null; then
     fi
     echo ""
     echo "After installing Node.js, run bootstrap again:"
-    echo "  ./scripts/bootstrap.sh"
+    echo "  ./bootstrap.sh"
     echo ""
     exit 0
 fi
