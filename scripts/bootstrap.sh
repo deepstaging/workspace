@@ -124,14 +124,23 @@ NPM_VERSION=$(npm --version)
 echo "✓ npm installed: $NPM_VERSION"
 echo ""
 
-# Step 4: Check for tsx (install if missing)
+# Step 4: Install npm dependencies if node_modules doesn't exist
+if [[ ! -d "$WORKSPACE_DIR/node_modules" ]]; then
+    echo "📦 Installing npm dependencies..."
+    cd "$WORKSPACE_DIR"
+    npm install
+    echo "✓ Dependencies installed"
+    echo ""
+fi
+
+# Step 5: Check for tsx (install if missing)
 if ! npm list -g tsx &> /dev/null && ! npm list tsx &> /dev/null; then
     echo "📦 tsx not found, installing globally..."
     npm install -g tsx
     echo ""
 fi
 
-# Step 5: Run TypeScript bootstrap
+# Step 6: Run TypeScript bootstrap
 echo "🚀 Starting TypeScript bootstrap..."
 echo ""
 
