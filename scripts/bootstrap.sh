@@ -1,535 +1,139 @@
 #!/usr/bin/env bash
 set -e
 
-# Deepstaging Workspace Bootstrap Script
+# Deepstaging Workspace Bootstrap (Bash Entry Point)
 # 
-# This script sets up the multi-repository workspace environment:
-# - Checks for required dependencies (Homebrew, bash 4.0+, gh, direnv, node, npm)
-# - Installs missing dependencies via Homebrew
-# - Installs npm dependencies for TypeScript scripts
-# - Copies .envrc to parent directory for cross-repo script loading
-# - Discovers Deepstaging repositories via GitHub CLI
-# - Clones selected repositories
-# - Sets up local development environment
-#
-# After running bootstrap:
-# - Use `npm run sync` or `ts-sync` for repository synchronization
-# - TypeScript scripts provide AI-powered commit messages
-# - All workspace scripts are available via direnv
+# This is a minimal bash wrapper that validates prerequisites and
+# delegates to the TypeScript bootstrap script for the actual work.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
-PARENT_DIR="$(dirname "$WORKSPACE_DIR")"
-GITHUB_ORG="deepstaging"
-SCRIPT_NAME=$(basename "$0")
-
-# Resolve symlinks to find actual script location
-SCRIPT_PATH="${BASH_SOURCE[0]}"
-while [ -L "$SCRIPT_PATH" ]; do
-    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-    SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
-    [[ $SCRIPT_PATH != /* ]] && SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH"
-done
-SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
-PARENT_DIR="$(dirname "$WORKSPACE_DIR")"
-
-show_help() {
-    cat << EOF
-Usage: $SCRIPT_NAME
-
-Bootstrap the Deepstaging multi-repository workspace.
-
-DESCRIPTION:
-    This script sets up the complete development environment:
-    - Installs required dependencies (bash, gh, direnv, jq, node, npm)
-    - Installs npm packages for TypeScript scripts
-    - Copies .envrc and dotnet-tools.json to parent directory
-    - Discovers and clones Deepstaging repositories from GitHub
-    - Sets up local NuGet feed
-    - Configures direnv for cross-repo script loading
-
-    The script is interactive and will prompt for confirmations.
-
-    NEW: TypeScript scripts are now available with AI-powered features!
-
-DEPENDENCIES:
-    - Homebrew (will check and install others via Brewfile)
-    - Bash 4.0+ (for mapfile support)
-    - GitHub CLI (gh)
-    - direnv
-    - jq
-    - Node.js (for TypeScript scripts)
-    - npm (for package management)
-
-EXAMPLES:
-    $SCRIPT_NAME              # Run interactive bootstrap
-    $SCRIPT_NAME --help       # Show this help
-
-EOF
-}
-
-# Check for help flag first
-if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
-    show_help
-    exit 0
-fi
 
 echo "🚀 Deepstaging Workspace Bootstrap"
 echo "=================================="
 echo ""
-echo "Workspace: $WORKSPACE_DIR"
-echo "Parent:    $PARENT_DIR"
-echo ""
 
-# Check Bash version (need 4.0+ for mapfile)
-BASH_MAJOR="${BASH_VERSINFO[0]}"
-if [[ "$BASH_MAJOR" -lt 4 ]]; then
-    echo "❌ Bash version too old: $BASH_VERSION"
-    echo ""
-    echo "This script requires Bash 4.0 or newer (for mapfile support)."
-    echo ""
-    echo "Install modern Bash with Homebrew:"
-    echo "  brew install bash"
-    echo ""
-    echo "Then run this script again with:"
-    echo "  /opt/homebrew/bin/bash $0"
-    echo ""
-    exit 1
+# Check for help flag
+if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
+    cat << 'HELP'
+Usage: bootstrap.sh
+
+Bootstrap the Deepstaging multi-repository workspace.
+
+This script validates prerequisites and runs the TypeScript bootstrap.
+
+REQUIREMENTS:
+    - Node.js and npm (for TypeScript execution)
+
+EXAMPLES:
+    ./bootstrap.sh              # Run bootstrap
+    ./bootstrap.sh --help       # Show this help
+
+HELP
+    exit 0
 fi
 
-echo "✓ Bash version: $BASH_VERSION"
-echo ""
+# Step 1: Check/copy .envrc to parent directory
+PARENT_DIR="$(dirname "$WORKSPACE_DIR")"
+ENVRC_PATH="$PARENT_DIR/.envrc"
+ENVRC_TEMPLATE="$WORKSPACE_DIR/.envrc"
 
-# Step 0: Check for Homebrew
-echo "🍺 Step 0: Checking Dependencies"
-echo ""
-
-if ! command -v brew &> /dev/null; then
-    echo "❌ Homebrew is not installed!"
-    echo ""
-    echo "Install Homebrew first:"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-    echo ""
-    echo "After installing, run this script again."
-    exit 1
-fi
-
-echo "✓ Homebrew found"
-
-# Check if Brewfile exists and offer to install dependencies
-DEPS_INSTALLED=false
-if [[ -f "$WORKSPACE_DIR/Brewfile" ]]; then
-    echo ""
-    read -p "Install/update workspace dependencies from Brewfile? (Y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+if [[ ! -f "$ENVRC_PATH" ]]; then
+    echo "📋 .envrc not found in parent directory"
+    
+    if [[ ! -f "$ENVRC_TEMPLATE" ]]; then
+        echo "❌ .envrc template not found at: $ENVRC_TEMPLATE"
         echo ""
-        echo "📦 Installing dependencies..."
-        (cd "$WORKSPACE_DIR" && brew bundle install)
+        echo "The workspace should contain a .envrc template file."
+        exit 1
+    fi
+    
+    echo "📄 Copying .envrc template to parent directory..."
+    cp "$ENVRC_TEMPLATE" "$ENVRC_PATH"
+    echo "✓ Created .envrc at: $ENVRC_PATH"
+    echo ""
+    
+    # Offer to run direnv allow
+    if command -v direnv &> /dev/null; then
+        echo "🔧 Configuring direnv..."
+        cd "$PARENT_DIR"
+        direnv allow
+        echo "✓ direnv configured"
         echo ""
-        echo "✓ Dependencies installed"
-        DEPS_INSTALLED=true
+    else
+        echo "⚠️  direnv not installed yet (will be installed by bootstrap)"
+        echo "   After bootstrap completes, run: direnv allow"
+        echo ""
     fi
 else
-    echo "⚠️  No Brewfile found - skipping dependency installation"
+    echo "✓ Found .envrc at: $ENVRC_PATH"
+    echo ""
 fi
 
-# Verify required tools
-echo ""
-echo "Checking required tools..."
-
-MISSING_TOOLS=()
-
-if ! command -v gh &> /dev/null; then
-    MISSING_TOOLS+=("gh")
-fi
-
-if ! command -v direnv &> /dev/null; then
-    MISSING_TOOLS+=("direnv")
-fi
-
+# Step 2: Check for Node.js
 if ! command -v node &> /dev/null; then
-    MISSING_TOOLS+=("node")
-fi
-
-if ! command -v npm &> /dev/null; then
-    MISSING_TOOLS+=("npm")
-fi
-
-if [[ ${#MISSING_TOOLS[@]} -gt 0 ]]; then
-    echo "❌ Missing required tools: ${MISSING_TOOLS[*]}"
+    echo "⚠️  Node.js is not installed"
     echo ""
-    echo "Install them with:"
-    echo "  brew install ${MISSING_TOOLS[*]}"
+    echo "Node.js is required to run the TypeScript bootstrap."
     echo ""
-    echo "Or run this script again to install via Brewfile."
-    exit 1
-fi
-
-echo "✓ All required tools available (gh, direnv, node, npm)"
-
-# Install npm dependencies for TypeScript scripts
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📦 Installing npm dependencies for TypeScript scripts"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "The workspace now uses TypeScript for scripts, providing:"
-echo "  • Type-safe git operations"
-echo "  • AI-powered commit messages (via GitHub Copilot)"
-echo "  • Better error handling and async/await"
-echo "  • Familiar C#-like syntax"
-echo ""
-
-if [[ -f "$WORKSPACE_DIR/package.json" ]]; then
-    cd "$WORKSPACE_DIR"
     
-    if [[ ! -d "node_modules" ]] || [[ ! -f "node_modules/.package-lock.json" ]]; then
-        echo "Installing dependencies..."
-        npm install
-        echo "✓ npm dependencies installed"
+    # Check if Homebrew is available
+    if command -v brew &> /dev/null; then
+        echo "Homebrew is available. You can install dependencies with:"
+        echo "  cd $WORKSPACE_DIR && brew bundle"
+        echo ""
+        read -p "Install dependencies now? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "📦 Installing dependencies via Homebrew..."
+            cd "$WORKSPACE_DIR"
+            brew bundle
+            echo ""
+            echo "✅ Dependencies installed"
+            echo ""
+            echo "Please run bootstrap again:"
+            echo "  ./scripts/bootstrap.sh"
+            echo ""
+            exit 0
+        fi
     else
-        echo "✓ npm dependencies already installed"
+        echo "Install Homebrew first: https://brew.sh"
+        echo "Then run: brew bundle"
     fi
-    
-    cd "$PARENT_DIR"
-else
-    echo "⚠️  No package.json found - skipping npm install"
-fi
-
-# Check for useful CLI tools
-echo ""
-echo "Checking optional CLI tools..."
-
-MISSING_CLI_TOOLS=()
-
-if ! command -v copilot &> /dev/null; then
-    MISSING_CLI_TOOLS+=("copilot-cli")
-fi
-
-if [[ ${#MISSING_CLI_TOOLS[@]} -gt 0 ]]; then
-    echo "⚠️  Recommended tools not installed:"
-    for tool in "${MISSING_CLI_TOOLS[@]}"; do
-        case "$tool" in
-            copilot-cli)
-                echo "  - GitHub Copilot CLI (for AI-powered commit messages)"
-                ;;
-        esac
-    done
     echo ""
-    read -p "Install recommended tools via Homebrew? (Y/n): " -n 1 -r
-    echo
-    
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        echo ""
-        for tool in "${MISSING_CLI_TOOLS[@]}"; do
-            echo "📥 Installing $tool..."
-            brew install --cask "$tool" || echo "   ⚠️  Failed to install $tool"
-        done
-        echo ""
-        echo "✓ Tools installed"
-    else
-        echo ""
-        echo "⏭️  Skipped tool installation"
-        echo ""
-        echo "   You can install them later with:"
-        for tool in "${MISSING_CLI_TOOLS[@]}"; do
-            echo "     brew install --cask $tool"
-        done
-    fi
-else
-    echo "✓ All recommended tools installed"
-fi
-
-echo ""
-
-# If we just installed dependencies, ask user to restart
-if [[ "$DEPS_INSTALLED" == "true" ]]; then
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "✅ Dependencies installed successfully!"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "Please restart this script to continue setup:"
-    echo "  $0"
-    echo ""
-    echo "This ensures the newly installed tools are available."
+    echo "After installing Node.js, run bootstrap again:"
+    echo "  ./scripts/bootstrap.sh"
     echo ""
     exit 0
 fi
 
-echo ""
+NODE_VERSION=$(node --version)
+echo "✓ Node.js installed: $NODE_VERSION"
 
-# Step 1: Copy .envrc and dotnet tools to parent directory
-echo "📋 Step 1: Setting up workspace configuration"
-echo ""
-
-# Copy .envrc
-ENVRC_SRC="$WORKSPACE_DIR/.envrc"
-ENVRC_DST="$PARENT_DIR/.envrc"
-
-if [[ -f "$ENVRC_DST" ]]; then
-    echo "⚠️  .envrc already exists in parent directory"
-    read -p "   Overwrite? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        cp "$ENVRC_SRC" "$ENVRC_DST"
-        echo "✅ Copied .envrc to parent directory"
-    else
-        echo "⏭️  Skipped .envrc copy"
-    fi
-else
-    cp "$ENVRC_SRC" "$ENVRC_DST"
-    echo "✅ Copied .envrc to parent directory"
+# Step 3: Check for npm
+if ! command -v npm &> /dev/null; then
+    echo "⚠️  npm is not installed"
+    echo ""
+    echo "npm should be included with Node.js."
+    echo "Please reinstall Node.js."
+    echo ""
+    exit 0
 fi
 
-echo ""
-echo "   The .envrc will auto-load scripts from all repositories."
+NPM_VERSION=$(npm --version)
+echo "✓ npm installed: $NPM_VERSION"
 echo ""
 
-# Copy dotnet tools manifest
-TOOLS_SRC="$WORKSPACE_DIR/.config/dotnet-tools.json"
-TOOLS_DST="$PARENT_DIR/.config"
-
-if [[ -f "$TOOLS_SRC" ]]; then
-    mkdir -p "$TOOLS_DST"
-    
-    if [[ -f "$TOOLS_DST/dotnet-tools.json" ]]; then
-        echo "⚠️  dotnet-tools.json already exists in parent directory"
-        read -p "   Overwrite? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            cp "$TOOLS_SRC" "$TOOLS_DST/dotnet-tools.json"
-            echo "✅ Copied dotnet-tools.json to parent directory"
-        else
-            echo "⏭️  Skipped dotnet-tools.json copy"
-        fi
-    else
-        cp "$TOOLS_SRC" "$TOOLS_DST/dotnet-tools.json"
-        echo "✅ Copied dotnet-tools.json to parent directory"
-    fi
-    echo ""
-    echo "   Shared dotnet tools available across all repositories."
+# Step 4: Check for tsx (install if missing)
+if ! npm list -g tsx &> /dev/null && ! npm list tsx &> /dev/null; then
+    echo "📦 tsx not found, installing globally..."
+    npm install -g tsx
     echo ""
 fi
 
-# Check direnv hook setup
-if ! grep -q "direnv hook" ~/.bashrc ~/.zshrc ~/.config/fish/config.fish 2>/dev/null; then
-    echo "   ⚠️  direnv hook not detected in your shell config!"
-    echo ""
-    echo "   Add to your shell config (~/.bashrc, ~/.zshrc, etc.):"
-    echo "   eval \"\$(direnv hook bash)\"  # or zsh, fish"
-    echo ""
-fi
-
-# Step 2: Discover Deepstaging repositories via GitHub CLI
-echo "📦 Step 2: Repository Discovery"
+# Step 5: Run TypeScript bootstrap
+echo "🚀 Starting TypeScript bootstrap..."
 echo ""
 
-# Check if gh is authenticated
-if ! gh auth status &> /dev/null; then
-    echo "❌ GitHub CLI not authenticated!"
-    echo ""
-    echo "Please authenticate first:"
-    echo "  gh auth login"
-    echo ""
-    exit 1
-fi
-
-echo "Discovering $GITHUB_ORG repositories via GitHub CLI..."
-echo ""
-
-# Fetch all repositories from the organization
-REPOS_JSON=$(gh repo list "$GITHUB_ORG" --json name,isArchived,isFork --limit 100 2>/dev/null)
-
-if [[ -z "$REPOS_JSON" || "$REPOS_JSON" == "[]" ]]; then
-    echo "❌ Could not fetch repositories from GitHub"
-    echo ""
-    echo "This could mean:"
-    echo "  - You don't have access to the $GITHUB_ORG organization"
-    echo "  - The organization doesn't exist or is private"
-    echo "  - gh CLI needs re-authentication: gh auth login"
-    echo ""
-    exit 1
-fi
-
-# Parse repository names (exclude archived and forks)
-mapfile -t REPOS < <(echo "$REPOS_JSON" | jq -r '.[] | select(.isArchived == false and .isFork == false) | .name' | sort)
-
-if [[ ${#REPOS[@]} -eq 0 ]]; then
-    echo "❌ No active repositories found in $GITHUB_ORG"
-    exit 1
-fi
-
-# Map repository names to local directory names
-get_local_dir_name() {
-    local repo="$1"
-    # Special case: .github repo maps to github-profile directory
-    if [[ "$repo" == ".github" ]]; then
-        echo "github-profile"
-    else
-        echo "$repo"
-    fi
-}
-
-echo "Found ${#REPOS[@]} active repositories:"
-MISSING_REPOS=()
-for i in "${!REPOS[@]}"; do
-    repo="${REPOS[$i]}"
-    local_dir=$(get_local_dir_name "$repo")
-    if [[ -d "$PARENT_DIR/$local_dir" ]]; then
-        echo "  $((i+1)). $repo [✓ Already cloned]"
-    else
-        echo "  $((i+1)). $repo"
-        MISSING_REPOS+=("$repo")
-    fi
-done
-echo ""
-
-# Step 3: Clone repositories (only if there are missing repos)
-if [[ ${#MISSING_REPOS[@]} -eq 0 ]]; then
-    echo "✅ All repositories already cloned!"
-    echo ""
-else
-    echo "🔄 Step 3: Clone Repositories"
-    echo ""
-    echo "Options:"
-    echo "  a) Clone all missing repositories"
-    echo "  s) Select individual repositories to clone"
-    echo "  n) Skip (no cloning)"
-    echo ""
-    read -p "Choice (a/s/n): " -n 1 -r CLONE_CHOICE
-    echo
-    echo ""
-
-    case $CLONE_CHOICE in
-        [Aa])
-            echo "Cloning all missing repositories..."
-            echo ""
-            for repo in "${REPOS[@]}"; do
-                local_dir=$(get_local_dir_name "$repo")
-                if [[ ! -d "$PARENT_DIR/$local_dir" ]]; then
-                    echo "📥 Cloning $repo..."
-                    gh repo clone "$GITHUB_ORG/$repo" "$PARENT_DIR/$local_dir"
-                    echo "   ✓ $repo cloned to $local_dir"
-                    echo ""
-                else
-                    echo "⏭️  $repo already exists"
-                fi
-            done
-            ;;
-        [Ss])
-            echo "Select repositories to clone (space-separated numbers, e.g., '1 3'):"
-            read -p "Numbers: " -r SELECTIONS
-            echo ""
-            
-            for num in $SELECTIONS; do
-                idx=$((num-1))
-                if [[ $idx -ge 0 && $idx -lt ${#REPOS[@]} ]]; then
-                    repo="${REPOS[$idx]}"
-                    local_dir=$(get_local_dir_name "$repo")
-                    if [[ ! -d "$PARENT_DIR/$local_dir" ]]; then
-                        echo "📥 Cloning $repo..."
-                        gh repo clone "$GITHUB_ORG/$repo" "$PARENT_DIR/$local_dir"
-                        echo "   ✓ $repo cloned to $local_dir"
-                        echo ""
-                    else
-                        echo "⏭️  $repo already exists"
-                    fi
-                else
-                    echo "⚠️  Invalid selection: $num"
-                fi
-            done
-            ;;
-        [Nn])
-            echo "⏭️  Skipping repository cloning"
-            echo ""
-            ;;
-        *)
-            echo "⚠️  Invalid choice. Skipping repository cloning"
-            echo ""
-            ;;
-    esac
-fi
-
-# Step 4: Setup local NuGet feed
-echo "📦 Step 4: Local NuGet Feed"
-echo ""
-
-NUGET_FEED="$HOME/.nuget/local-feed"
-if [[ -d "$NUGET_FEED" ]]; then
-    echo "✓ Local NuGet feed exists: $NUGET_FEED"
-else
-    echo "Creating local NuGet feed directory..."
-    mkdir -p "$NUGET_FEED"
-    echo "✓ Created: $NUGET_FEED"
-fi
-echo ""
-
-# Step 5: direnv setup
-echo "🔧 Step 5: Enable direnv"
-echo ""
-
-cd "$PARENT_DIR"
-if direnv status &> /dev/null; then
-    echo "Allowing .envrc in parent directory..."
-    direnv allow
-    echo "✓ direnv configured"
-else
-    echo "⚠️  Could not detect direnv status"
-    echo ""
-    echo "Manually allow the .envrc:"
-    echo "  cd $PARENT_DIR"
-    echo "  direnv allow"
-fi
-echo ""
-
-# Step 6: Summary
-echo "✨ Bootstrap Complete!"
-echo "===================="
-echo ""
-echo "Environment setup:"
-echo "  ✓ Dependencies installed (including Node.js)"
-echo "  ✓ npm packages installed (TypeScript + libraries)"
-echo "  ✓ .envrc configured"
-echo "  ✓ Repositories available"
-echo "  ✓ Local NuGet feed ready"
-echo ""
-echo "🚀 TypeScript Scripts Ready!"
-echo "  • sync-repos: AI-powered repository synchronization"
-echo "  • Uses GitHub Copilot for commit messages"
-echo "  • Type-safe git operations"
-echo ""
-echo "Next steps:"
-echo ""
-echo "1. Ensure direnv hook is in your shell config:"
-echo "   # Add to ~/.bashrc or ~/.zshrc:"
-echo "   eval \"\$(direnv hook bash)\"  # or zsh"
-echo ""
-echo "2. Reload your shell or source config:"
-echo "   source ~/.bashrc  # or ~/.zshrc"
-echo ""
-echo "3. Navigate to parent directory:"
-echo "   cd $PARENT_DIR"
-echo "   # Scripts auto-loaded via direnv!"
-echo ""
-echo "4. Use TypeScript scripts:"
-echo "   cd workspace"
-echo "   npm run sync              # Repository sync with AI commits"
-echo "   npm run sync -- --help    # Show help"
-echo ""
-echo "   Or use the wrapper (after direnv loads):"
-echo "   ts-sync                   # Direct command"
-echo ""
-echo "5. Legacy bash scripts still available:"
-echo "   workspace-bootstrap.sh                       # This script"
-echo "   workspace-publish.sh deepstaging             # Publish to local NuGet"
-echo "   workspace-discover-dependents.sh Deepstaging # Find dependencies"
-echo ""
-echo "6. Check documentation:"
-echo "   - Permanent:  workspace/.docs/"
-echo "   - TypeScript: workspace/scripts-ts/README.md"
-echo "   - Migration:  workspace/.docs/TYPESCRIPT_MIGRATION.md"
-echo ""
-echo "Happy coding! 🎉"
+cd "$WORKSPACE_DIR"
+exec tsx scripts/bootstrap/index.ts "$@"

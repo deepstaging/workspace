@@ -47,9 +47,7 @@ Thumbs.db
 
 # Node.js / TypeScript
 node_modules/
-/scripts/*.js
-/scripts/*.d.ts
-/scripts/*.map
+.build/
 *.tsbuildinfo
 
 # Session documentation (temporary, user-specific)

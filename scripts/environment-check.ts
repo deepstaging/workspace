@@ -1,0 +1,326 @@
+#!/usr/bin/env -S node --no-warnings --loader ts-node/esm
+/**
+ * Environment Check - Verify Deepstaging workspace environment
+ * 
+ * This script performs read-only checks to validate the workspace environment
+ * is configured correctly. It does not modify anything.
+ * 
+ * Usage:
+ *   tsx environment-check.ts
+ *   environment-check  (via PATH after direnv)
+ */
+
+import chalk from 'chalk';
+import { existsSync, statSync } from 'fs';
+import { execSync } from 'child_process';
+import { homedir } from 'os';
+import { join } from 'path';
+
+interface CheckResult {
+  name: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+  details?: string;
+}
+
+const checks: CheckResult[] = [];
+
+function addCheck(name: string, status: 'pass' | 'warn' | 'fail', message: string, details?: string) {
+  checks.push({ name, status, message, details });
+}
+
+function checkCommand(cmd: string): boolean {
+  try {
+    execSync(`command -v ${cmd}`, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCommandVersion(cmd: string, args: string = '--version'): string {
+  try {
+    const output = execSync(`${cmd} ${args}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    return output.split('\n')[0].trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
+console.log(chalk.bold.cyan('\n🔍 Deepstaging Environment Check\n'));
+console.log(chalk.gray('Validating workspace configuration...\n'));
+
+// ============================================================================
+// 1. Environment Variables
+// ============================================================================
+
+console.log(chalk.bold('Environment Variables:'));
+
+const requiredEnvVars = [
+  'DEEPSTAGING_ORG_ROOT',
+  'DEEPSTAGING_WORKSPACE_DIR',
+  'DEEPSTAGING_REPOSITORIES_DIR',
+  'DEEPSTAGING_ARTIFACTS_DIR',
+  'DEEPSTAGING_LOCAL_NUGET_FEED',
+  'DEEPSTAGING_GITHUB_ORG',
+];
+
+for (const envVar of requiredEnvVars) {
+  const value = process.env[envVar];
+  if (value) {
+    addCheck(
+      envVar,
+      'pass',
+      value
+    );
+  } else {
+    addCheck(
+      envVar,
+      'fail',
+      'Not set',
+      'Run: cd <org-root> && direnv allow'
+    );
+  }
+}
+
+// ============================================================================
+// 2. Directory Structure
+// ============================================================================
+
+console.log(chalk.bold('\nDirectory Structure:'));
+
+const orgRoot = process.env.DEEPSTAGING_ORG_ROOT;
+const workspaceDir = process.env.DEEPSTAGING_WORKSPACE_DIR;
+const repositoriesDir = process.env.DEEPSTAGING_REPOSITORIES_DIR;
+const artifactsDir = process.env.DEEPSTAGING_ARTIFACTS_DIR;
+const localFeed = process.env.DEEPSTAGING_LOCAL_NUGET_FEED;
+
+if (orgRoot) {
+  if (existsSync(orgRoot)) {
+    addCheck('Org Root', 'pass', orgRoot);
+  } else {
+    addCheck('Org Root', 'fail', 'Directory does not exist', orgRoot);
+  }
+}
+
+if (workspaceDir) {
+  if (existsSync(workspaceDir)) {
+    const scriptsDir = join(workspaceDir, 'scripts');
+    if (existsSync(scriptsDir)) {
+      addCheck('Workspace Scripts', 'pass', scriptsDir);
+    } else {
+      addCheck('Workspace Scripts', 'fail', 'scripts/ directory not found', scriptsDir);
+    }
+  } else {
+    addCheck('Workspace Dir', 'fail', 'Directory does not exist', workspaceDir);
+  }
+}
+
+if (repositoriesDir) {
+  if (existsSync(repositoriesDir)) {
+    try {
+      const repos = statSync(repositoriesDir).isDirectory() ? 'Found' : 'Not a directory';
+      addCheck('Repositories Dir', 'pass', repositoriesDir);
+    } catch {
+      addCheck('Repositories Dir', 'warn', 'Cannot access directory', repositoriesDir);
+    }
+  } else {
+    addCheck('Repositories Dir', 'warn', 'Directory does not exist (will be created)', repositoriesDir);
+  }
+}
+
+if (artifactsDir) {
+  if (existsSync(artifactsDir)) {
+    addCheck('Artifacts Dir', 'pass', artifactsDir);
+  } else {
+    addCheck('Artifacts Dir', 'warn', 'Directory does not exist (will be created)', artifactsDir);
+  }
+}
+
+if (localFeed) {
+  if (existsSync(localFeed)) {
+    addCheck('Local NuGet Feed', 'pass', localFeed);
+  } else {
+    addCheck('Local NuGet Feed', 'warn', 'Directory does not exist (will be created)', localFeed);
+  }
+}
+
+// Check for .envrc in org root
+if (orgRoot) {
+  const envrcPath = join(orgRoot, '.envrc');
+  if (existsSync(envrcPath)) {
+    addCheck('.envrc File', 'pass', envrcPath);
+  } else {
+    addCheck('.envrc File', 'fail', 'Not found in org root', 'Run bootstrap.sh to copy from workspace');
+  }
+}
+
+// ============================================================================
+// 3. Required Tools
+// ============================================================================
+
+console.log(chalk.bold('\nRequired Tools:'));
+
+const requiredTools = [
+  { cmd: 'node', versionArgs: '--version' },
+  { cmd: 'npm', versionArgs: '--version' },
+  { cmd: 'tsx', versionArgs: '--version' },
+  { cmd: 'dotnet', versionArgs: '--version' },
+  { cmd: 'gh', versionArgs: '--version' },
+  { cmd: 'git', versionArgs: '--version' },
+];
+
+for (const tool of requiredTools) {
+  if (checkCommand(tool.cmd)) {
+    const version = getCommandVersion(tool.cmd, tool.versionArgs);
+    addCheck(tool.cmd, 'pass', version);
+  } else {
+    addCheck(tool.cmd, 'fail', 'Not found in PATH', 'Install via Homebrew or package manager');
+  }
+}
+
+// ============================================================================
+// 4. Optional Tools
+// ============================================================================
+
+console.log(chalk.bold('\nOptional Tools:'));
+
+const optionalTools = [
+  { cmd: 'direnv', versionArgs: 'version' },
+  { cmd: 'jq', versionArgs: '--version' },
+  { cmd: 'ripgrep', versionArgs: '--version', displayCmd: 'rg' },
+  { cmd: 'fzf', versionArgs: '--version' },
+];
+
+for (const tool of optionalTools) {
+  const cmdToCheck = tool.displayCmd || tool.cmd;
+  if (checkCommand(cmdToCheck)) {
+    const version = getCommandVersion(cmdToCheck, tool.versionArgs);
+    addCheck(tool.cmd, 'pass', version);
+  } else {
+    addCheck(tool.cmd, 'warn', 'Not found (recommended)', 'Install via: brew install ' + tool.cmd);
+  }
+}
+
+// ============================================================================
+// 5. Direnv Status
+// ============================================================================
+
+console.log(chalk.bold('\nDirenv Status:'));
+
+if (checkCommand('direnv')) {
+  // Check if direnv hook is loaded (best effort)
+  const direnvDir = process.env.DIRENV_DIR;
+  if (direnvDir) {
+    addCheck('direnv hook', 'pass', 'Active in current shell');
+  } else {
+    addCheck('direnv hook', 'warn', 'Not active', 'Add eval "$(direnv hook bash)" to shell config');
+  }
+  
+  // Check if current directory is allowed
+  if (orgRoot && existsSync(join(orgRoot, '.envrc'))) {
+    if (process.env.DEEPSTAGING_ORG_ROOT) {
+      addCheck('direnv allowed', 'pass', 'Environment loaded');
+    } else {
+      addCheck('direnv allowed', 'fail', 'Not allowed', 'Run: cd ' + orgRoot + ' && direnv allow');
+    }
+  }
+} else {
+  addCheck('direnv', 'warn', 'Not installed', 'Automatic environment loading disabled');
+}
+
+// ============================================================================
+// 6. PATH Configuration
+// ============================================================================
+
+console.log(chalk.bold('\nPATH Configuration:'));
+
+const pathDirs = process.env.PATH?.split(':') || [];
+
+if (workspaceDir) {
+  const scriptsInPath = pathDirs.some(p => p.includes(join(workspaceDir, 'scripts')));
+  if (scriptsInPath) {
+    addCheck('Workspace Scripts in PATH', 'pass', 'Workspace automation available');
+  } else {
+    addCheck('Workspace Scripts in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
+  }
+  
+  const nodeModulesInPath = pathDirs.some(p => p.includes(join(workspaceDir, 'node_modules', '.bin')));
+  if (nodeModulesInPath) {
+    addCheck('Node Modules in PATH', 'pass', 'tsx and tools available');
+  } else {
+    addCheck('Node Modules in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
+  }
+}
+
+if (orgRoot) {
+  const aliasesInPath = pathDirs.some(p => p.includes(join(orgRoot, '.direnv', 'bin')));
+  if (aliasesInPath) {
+    addCheck('Script Aliases in PATH', 'pass', 'Repository script commands available');
+  } else {
+    addCheck('Script Aliases in PATH', 'warn', 'Not in PATH', 'Run: refresh');
+  }
+}
+
+// ============================================================================
+// Print Results
+// ============================================================================
+
+console.log(chalk.bold('\n' + '='.repeat(80)));
+console.log(chalk.bold('Results:\n'));
+
+let passCount = 0;
+let warnCount = 0;
+let failCount = 0;
+
+for (const check of checks) {
+  let icon = '';
+  let color = chalk.white;
+  
+  switch (check.status) {
+    case 'pass':
+      icon = chalk.green('✓');
+      color = chalk.green;
+      passCount++;
+      break;
+    case 'warn':
+      icon = chalk.yellow('⚠');
+      color = chalk.yellow;
+      warnCount++;
+      break;
+    case 'fail':
+      icon = chalk.red('✗');
+      color = chalk.red;
+      failCount++;
+      break;
+  }
+  
+  console.log(`${icon} ${color.bold(check.name)}: ${color(check.message)}`);
+  if (check.details) {
+    console.log(`  ${chalk.gray('→ ' + check.details)}`);
+  }
+}
+
+// ============================================================================
+// Summary
+// ============================================================================
+
+console.log(chalk.bold('\n' + '='.repeat(80)));
+console.log(chalk.bold('Summary:\n'));
+
+console.log(`  ${chalk.green('✓ Passed:')} ${passCount}`);
+console.log(`  ${chalk.yellow('⚠ Warnings:')} ${warnCount}`);
+console.log(`  ${chalk.red('✗ Failed:')} ${failCount}`);
+
+console.log();
+
+if (failCount > 0) {
+  console.log(chalk.red.bold('❌ Environment has critical issues that need to be fixed.\n'));
+  process.exit(1);
+} else if (warnCount > 0) {
+  console.log(chalk.yellow.bold('⚠️  Environment is functional but has recommendations.\n'));
+  process.exit(0);
+} else {
+  console.log(chalk.green.bold('✅ Environment is configured correctly!\n'));
+  process.exit(0);
+}
