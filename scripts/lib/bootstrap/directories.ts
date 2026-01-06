@@ -42,15 +42,52 @@ function initializeNuGetFeed(env: DeepstagingEnv): void {
   // Add as NuGet source if not already added
   try {
     const sources = execSync('dotnet nuget list source', { encoding: 'utf-8' });
-    if (!sources.includes(env.DEEPSTAGING_LOCAL_NUGET_FEED)) {
+    const sourceName = 'deepstaging-local';
+    
+    // Check if source name exists
+    const sourceNameExists = sources.includes(`${sourceName} [`);
+    
+    if (!sourceNameExists) {
+      // Source doesn't exist, add it
       console.log(chalk.cyan('  Adding local feed to NuGet sources...'));
       execSync(
-        `dotnet nuget add source "${env.DEEPSTAGING_LOCAL_NUGET_FEED}" --name "deepstaging-local"`,
+        `dotnet nuget add source "${env.DEEPSTAGING_LOCAL_NUGET_FEED}" --name "${sourceName}"`,
         { stdio: 'inherit' }
       );
       console.log(chalk.green('✓ Local NuGet feed added to sources'));
     } else {
-      console.log(chalk.gray('✓ Local NuGet feed already in sources'));
+      // Source name exists, check if path matches
+      const sourcePathMatches = sources.includes(env.DEEPSTAGING_LOCAL_NUGET_FEED);
+      
+      if (sourcePathMatches) {
+        console.log(chalk.gray('✓ Local NuGet feed already in sources'));
+      } else {
+        // Extract the existing path from the sources list
+        const lines = sources.split('\n');
+        let existingPath = '';
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(sourceName)) {
+            // The path is typically on the next line or after "Enabled" marker
+            const nextLines = lines.slice(i + 1, i + 3);
+            for (const line of nextLines) {
+              const trimmed = line.trim();
+              if (trimmed && !trimmed.startsWith('[') && trimmed !== 'Enabled' && trimmed !== 'Disabled') {
+                existingPath = trimmed;
+                break;
+              }
+            }
+            break;
+          }
+        }
+        
+        console.log(chalk.yellow(`\n⚠️  NuGet source "${sourceName}" exists with different path:`));
+        console.log(chalk.gray(`   Current: ${existingPath}`));
+        console.log(chalk.gray(`   Desired: ${env.DEEPSTAGING_LOCAL_NUGET_FEED}`));
+        console.log(chalk.gray(`\n   To update, run:`));
+        console.log(chalk.cyan(`   dotnet nuget remove source ${sourceName}`));
+        console.log(chalk.cyan(`   dotnet nuget add source "${env.DEEPSTAGING_LOCAL_NUGET_FEED}" --name "${sourceName}"`));
+        console.log();
+      }
     }
   } catch (error) {
     console.log(chalk.yellow('⚠️  Could not configure NuGet source (dotnet may not be installed yet)'));
