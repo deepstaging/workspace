@@ -351,7 +351,10 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
       if (param) {
         const flag = param.shortName ? `-${param.shortName}` : `--${key}`;
         if (param.type === 'bool') {
-          command += ` ${flag} ${value}`;
+          // Only add boolean flags when true (no value needed)
+          if (value === true || value === 'true') {
+            command += ` ${flag}`;
+          }
         } else {
           command += ` ${flag} "${value}"`;
         }
