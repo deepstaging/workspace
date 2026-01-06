@@ -255,7 +255,46 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     }
   }
 
-  // 9. Success message
+  // 9. Generate wrapper scripts
+  const wrapperSpinner = ora('Generating wrapper scripts...').start();
+  
+  try {
+    const templatesDir = path.join(__dirname, '..', 'templates', 'script-wrappers');
+    const scriptsDir = path.join(repoDir, 'scripts');
+    
+    // Ensure scripts directory exists
+    if (!fs.existsSync(scriptsDir)) {
+      fs.mkdirSync(scriptsDir, { recursive: true });
+    }
+    
+    // Read all template files
+    const templates = fs.readdirSync(templatesDir)
+      .filter(f => f.endsWith('.template'));
+    
+    for (const templateFile of templates) {
+      const templatePath = path.join(templatesDir, templateFile);
+      const outputFile = templateFile.replace('.template', '');
+      const outputPath = path.join(scriptsDir, outputFile);
+      
+      // Read template content
+      let content = fs.readFileSync(templatePath, 'utf8');
+      
+      // Replace template variables
+      content = content
+        .replace(/\{\{REPO_NAME\}\}/g, repoName)
+        .replace(/\{\{REPO_KEY\}\}/g, repoDirName);
+      
+      // Write output file
+      fs.writeFileSync(outputPath, content, { mode: 0o755 });
+    }
+    
+    wrapperSpinner.succeed(`Generated ${templates.length} wrapper script(s)`);
+  } catch (error: any) {
+    wrapperSpinner.warn('Failed to generate wrapper scripts');
+    console.log(chalk.yellow(`  ${error.message}`));
+  }
+
+  // 10. Success message
   console.log(chalk.bold.green(`\n✅ Repository created successfully!\n`));
   console.log(chalk.bold('Next steps:'));
   console.log(chalk.dim(`  cd ${repoDirName}`));

@@ -3,7 +3,8 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync, cpSync } from 'fs';
+import { join } from 'path';
 import chalk from 'chalk';
 import { DeepstagingEnv } from './types.js';
 
@@ -25,6 +26,7 @@ export function createDirectoryStructure(env: DeepstagingEnv): void {
   }
 
   initializeNuGetFeed(env);
+  copyAgentDirectories(env);
   console.log();
 }
 
@@ -52,5 +54,32 @@ function initializeNuGetFeed(env: DeepstagingEnv): void {
     }
   } catch (error) {
     console.log(chalk.yellow('⚠️  Could not configure NuGet source (dotnet may not be installed yet)'));
+  }
+}
+
+function copyAgentDirectories(env: DeepstagingEnv): void {
+  const templatesDir = join(env.DEEPSTAGING_WORKSPACE_DIR, 'templates', 'agent-directories');
+  
+  if (!existsSync(templatesDir)) {
+    console.log(chalk.yellow('⚠️  Agent directory templates not found, skipping'));
+    return;
+  }
+
+  console.log(chalk.cyan('\n  Setting up agent directories...'));
+  
+  const agentDirs = readdirSync(templatesDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
+  for (const agentDir of agentDirs) {
+    const targetPath = join(env.DEEPSTAGING_ORG_ROOT, agentDir);
+    
+    if (!existsSync(targetPath)) {
+      const sourcePath = join(templatesDir, agentDir);
+      cpSync(sourcePath, targetPath, { recursive: true });
+      console.log(chalk.green(`  ✓ Created ${agentDir} directory`));
+    } else {
+      console.log(chalk.gray(`  ✓ ${agentDir} already exists`));
+    }
   }
 }

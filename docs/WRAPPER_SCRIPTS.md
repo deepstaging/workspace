@@ -10,13 +10,13 @@ Wrapper scripts are convenience scripts that call back to the workspace automati
 
 ### 1. Template Storage
 
-Wrapper script templates are stored in `workspace/scripts/wrapper-templates/` with a `.template` extension.
+Wrapper script templates are stored in `workspace/templates/script-wrappers/` with a `.template` extension.
 
 ### 2. Generation Process
 
 When creating a new repository, `repository-create.ts`:
 
-1. Reads all `.template` files from `wrapper-templates/`
+1. Reads all `.template` files from `templates/script-wrappers/`
 2. Replaces template variables with repository-specific values
 3. Writes the generated scripts to `<repository>/scripts/`
 4. Sets executable permissions (`chmod +x`)
@@ -54,10 +54,10 @@ To add a new wrapper script template:
 
 ### 1. Create Template File
 
-Create a new file in `workspace/scripts/wrapper-templates/` with the `.template` extension:
+Create a new file in `workspace/templates/script-wrappers/` with the `.template` extension:
 
 ```bash
-# Example: workspace/scripts/wrapper-templates/test.sh.template
+# Example: workspace/templates/script-wrappers/test.sh.template
 #!/bin/bash
 set -e
 
@@ -72,7 +72,7 @@ The `repository-create.ts` script automatically processes all `.template` files,
 
 ### 3. Document the Template
 
-Add documentation to `wrapper-templates/README.md` explaining:
+Add documentation to `templates/script-wrappers/README.md` explaining:
 - What the script does
 - What template variables it uses
 - Usage examples
@@ -114,7 +114,7 @@ workspace-repository-create -t deepstaging-roslyn -n ExistingRepo
 # Choose to overwrite wrapper scripts only
 
 # Or copy templates manually
-cp workspace/scripts/wrapper-templates/publish.sh.template \
+cp workspace/templates/script-wrappers/publish.sh.template \
    MyRepo/scripts/publish.sh
 # Then manually replace {{REPO_NAME}} and {{REPO_KEY}}
 ```
@@ -154,6 +154,6 @@ dotnet nuget push ./artifacts/**/*.nupkg \
 
 ## See Also
 
-- `scripts/wrapper-templates/README.md` - Template documentation
+- `templates/script-wrappers/README.md` - Template documentation
 - `scripts/repository-create.ts` - Generation implementation
 - Repository-specific `scripts/` directories - Generated outputs
