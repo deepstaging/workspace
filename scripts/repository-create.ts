@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { select, input, checkbox } from '@inquirer/prompts';
+import search from '@inquirer/search';
 import ora from 'ora';
 import chalk from 'chalk';
 
@@ -335,11 +336,20 @@ async function promptForTemplate(templates: DotnetTemplate[]): Promise<string> {
     };
   });
 
-  const template = await select({
-    message: 'Choose a template (type to filter):',
-    choices: choices as any,
-    pageSize: 15,
-    loop: false
+  const template = await search({
+    message: 'Choose a template:',
+    source: async (input) => {
+      if (!input) {
+        return choices;
+      }
+      
+      const searchTerm = input.toLowerCase();
+      return choices.filter(choice => 
+        choice.value.toLowerCase().includes(searchTerm) ||
+        choice.description.toLowerCase().includes(searchTerm)
+      );
+    },
+    pageSize: 15
   });
 
   return template as string;
