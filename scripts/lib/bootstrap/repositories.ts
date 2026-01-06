@@ -44,11 +44,17 @@ export async function discoverAndCloneRepositories(
 
   const githubRepos = getExistingRepos(env.DEEPSTAGING_GITHUB_ORG);
   const clonedRepos = getClonedRepos(env.DEEPSTAGING_REPOSITORIES_DIR);
-  const unclonedRepos = githubRepos.filter(repo => !clonedRepos.includes(repo));
+  
+  // Filter out the workspace repository itself (already cloned as the current workspace)
+  const cloneableRepos = githubRepos.filter(repo => repo !== 'workspace');
+  const unclonedRepos = cloneableRepos.filter(repo => !clonedRepos.includes(repo));
 
   if (clonedRepos.length > 0) {
     console.log(chalk.green(`✓ Already cloned (${clonedRepos.length}): ${clonedRepos.join(', ')}\n`));
   }
+  
+  // Note about workspace
+  console.log(chalk.dim(`ℹ  Workspace repository is your current location (not shown)\n`));
 
   if (unclonedRepos.length === 0) {
     console.log(chalk.green('✅ All repositories are already cloned\n'));
