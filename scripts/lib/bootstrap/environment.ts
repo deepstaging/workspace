@@ -25,6 +25,23 @@ export function copyEnvrcIfMissing(orgRoot: string, workspaceDir: string): void 
   }
 }
 
+export function copyAgentsGuide(orgRoot: string, workspaceDir: string): void {
+  const agentsPath = join(orgRoot, 'AGENTS.md');
+  const templatePath = join(workspaceDir, 'templates', 'AGENTS.md');
+
+  if (!existsSync(agentsPath)) {
+    if (!existsSync(templatePath)) {
+      console.log(chalk.yellow('⚠️  AGENTS.md template not found, skipping'));
+      return;
+    }
+
+    copyFileSync(templatePath, agentsPath);
+    console.log(chalk.green(`✓ Copied AGENTS.md to: ${agentsPath}\n`));
+  } else {
+    console.log(chalk.gray(`✓ AGENTS.md already exists at: ${agentsPath}\n`));
+  }
+}
+
 export function loadEnvFromEnvrc(envrcPath: string, orgRoot: string): DeepstagingEnv {
   if (!existsSync(envrcPath)) {
     throw new Error(`.envrc not found at: ${envrcPath}`);

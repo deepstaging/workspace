@@ -21,7 +21,7 @@
 
 import { join } from 'path';
 import chalk from 'chalk';
-import { copyEnvrcIfMissing, loadEnvFromEnvrc, validateEnvironment } from '../lib/bootstrap/environment.js';
+import { copyEnvrcIfMissing, copyAgentsGuide, loadEnvFromEnvrc, validateEnvironment } from '../lib/bootstrap/environment.js';
 import { checkDependencies, installMissingDependencies, installNpmDependencies, buildTypeScript, checkGitHubAuth } from '../lib/bootstrap/dependencies.js';
 import { createDirectoryStructure } from '../lib/bootstrap/directories.js';
 import { discoverAndCloneRepositories } from '../lib/bootstrap/repositories.js';
@@ -42,8 +42,9 @@ async function main() {
   const envrcPath = join(orgRoot, '.envrc');
 
   try {
-    // Step 1: Copy .envrc if missing
+    // Step 1: Copy .envrc and AGENTS.md if missing
     copyEnvrcIfMissing(orgRoot, workspaceDir);
+    copyAgentsGuide(orgRoot, workspaceDir);
 
     // Step 2: Load and validate environment
     console.log(chalk.blue('📂 Loading environment from parent .envrc...\n'));
