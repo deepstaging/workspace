@@ -18,6 +18,7 @@ import { join } from 'path';
 
 interface CheckResult {
   name: string;
+  category: string;
   status: 'pass' | 'warn' | 'fail';
   message: string;
   details?: string;
@@ -25,8 +26,8 @@ interface CheckResult {
 
 const checks: CheckResult[] = [];
 
-function addCheck(name: string, status: 'pass' | 'warn' | 'fail', message: string, details?: string) {
-  checks.push({ name, status, message, details });
+function addCheck(category: string, name: string, status: 'pass' | 'warn' | 'fail', message: string, details?: string) {
+  checks.push({ category, name, status, message, details });
 }
 
 function checkCommand(cmd: string): boolean {
@@ -70,12 +71,14 @@ for (const envVar of requiredEnvVars) {
   const value = process.env[envVar];
   if (value) {
     addCheck(
+      'Environment Variables',
       envVar,
       'pass',
       value
     );
   } else {
     addCheck(
+      'Environment Variables',
       envVar,
       'fail',
       'Not set',
@@ -98,9 +101,9 @@ const localFeed = process.env.DEEPSTAGING_LOCAL_NUGET_FEED;
 
 if (orgRoot) {
   if (existsSync(orgRoot)) {
-    addCheck('Org Root', 'pass', orgRoot);
+    addCheck('Directory Structure', 'Org Root', 'pass', orgRoot);
   } else {
-    addCheck('Org Root', 'fail', 'Directory does not exist', orgRoot);
+    addCheck('Directory Structure', 'Org Root', 'fail', 'Directory does not exist', orgRoot);
   }
 }
 
@@ -108,12 +111,12 @@ if (workspaceDir) {
   if (existsSync(workspaceDir)) {
     const scriptsDir = join(workspaceDir, 'scripts');
     if (existsSync(scriptsDir)) {
-      addCheck('Workspace Scripts', 'pass', scriptsDir);
+      addCheck('Directory Structure', 'Workspace Scripts', 'pass', scriptsDir);
     } else {
-      addCheck('Workspace Scripts', 'fail', 'scripts/ directory not found', scriptsDir);
+      addCheck('Directory Structure', 'Workspace Scripts', 'fail', 'scripts/ directory not found', scriptsDir);
     }
   } else {
-    addCheck('Workspace Dir', 'fail', 'Directory does not exist', workspaceDir);
+    addCheck('Directory Structure', 'Workspace Dir', 'fail', 'Directory does not exist', workspaceDir);
   }
 }
 
@@ -121,28 +124,28 @@ if (repositoriesDir) {
   if (existsSync(repositoriesDir)) {
     try {
       const repos = statSync(repositoriesDir).isDirectory() ? 'Found' : 'Not a directory';
-      addCheck('Repositories Dir', 'pass', repositoriesDir);
+      addCheck('Directory Structure', 'Repositories Dir', 'pass', repositoriesDir);
     } catch {
-      addCheck('Repositories Dir', 'warn', 'Cannot access directory', repositoriesDir);
+      addCheck('Directory Structure', 'Repositories Dir', 'warn', 'Cannot access directory', repositoriesDir);
     }
   } else {
-    addCheck('Repositories Dir', 'warn', 'Directory does not exist (will be created)', repositoriesDir);
+    addCheck('Directory Structure', 'Repositories Dir', 'warn', 'Directory does not exist (will be created)', repositoriesDir);
   }
 }
 
 if (artifactsDir) {
   if (existsSync(artifactsDir)) {
-    addCheck('Artifacts Dir', 'pass', artifactsDir);
+    addCheck('Directory Structure', 'Artifacts Dir', 'pass', artifactsDir);
   } else {
-    addCheck('Artifacts Dir', 'warn', 'Directory does not exist (will be created)', artifactsDir);
+    addCheck('Directory Structure', 'Artifacts Dir', 'warn', 'Directory does not exist (will be created)', artifactsDir);
   }
 }
 
 if (localFeed) {
   if (existsSync(localFeed)) {
-    addCheck('Local NuGet Feed', 'pass', localFeed);
+    addCheck('Directory Structure', 'Local NuGet Feed', 'pass', localFeed);
   } else {
-    addCheck('Local NuGet Feed', 'warn', 'Directory does not exist (will be created)', localFeed);
+    addCheck('Directory Structure', 'Local NuGet Feed', 'warn', 'Directory does not exist (will be created)', localFeed);
   }
 }
 
@@ -150,9 +153,9 @@ if (localFeed) {
 if (orgRoot) {
   const envrcPath = join(orgRoot, '.envrc');
   if (existsSync(envrcPath)) {
-    addCheck('.envrc File', 'pass', envrcPath);
+    addCheck('Directory Structure', '.envrc File', 'pass', envrcPath);
   } else {
-    addCheck('.envrc File', 'fail', 'Not found in org root', 'Run bootstrap.sh to copy from workspace');
+    addCheck('Directory Structure', '.envrc File', 'fail', 'Not found in org root', 'Run bootstrap.sh to copy from workspace');
   }
 }
 
@@ -174,9 +177,9 @@ const requiredTools = [
 for (const tool of requiredTools) {
   if (checkCommand(tool.cmd)) {
     const version = getCommandVersion(tool.cmd, tool.versionArgs);
-    addCheck(tool.cmd, 'pass', version);
+    addCheck('Required Tools', tool.cmd, 'pass', version);
   } else {
-    addCheck(tool.cmd, 'fail', 'Not found in PATH', 'Install via Homebrew or package manager');
+    addCheck('Required Tools', tool.cmd, 'fail', 'Not found in PATH', 'Install via Homebrew or package manager');
   }
 }
 
@@ -197,9 +200,9 @@ for (const tool of optionalTools) {
   const cmdToCheck = tool.displayCmd || tool.cmd;
   if (checkCommand(cmdToCheck)) {
     const version = getCommandVersion(cmdToCheck, tool.versionArgs);
-    addCheck(tool.cmd, 'pass', version);
+    addCheck('Optional Tools', tool.cmd, 'pass', version);
   } else {
-    addCheck(tool.cmd, 'warn', 'Not found (recommended)', 'Install via: brew install ' + tool.cmd);
+    addCheck('Optional Tools', tool.cmd, 'warn', 'Not found (recommended)', 'Install via: brew install ' + tool.cmd);
   }
 }
 
@@ -213,21 +216,21 @@ if (checkCommand('direnv')) {
   // Check if direnv hook is loaded (best effort)
   const direnvDir = process.env.DIRENV_DIR;
   if (direnvDir) {
-    addCheck('direnv hook', 'pass', 'Active in current shell');
+    addCheck('Direnv', 'direnv hook', 'pass', 'Active in current shell');
   } else {
-    addCheck('direnv hook', 'warn', 'Not active', 'Add eval "$(direnv hook bash)" to shell config');
+    addCheck('Direnv', 'direnv hook', 'warn', 'Not active', 'Add eval "$(direnv hook bash)" to shell config');
   }
   
   // Check if current directory is allowed
   if (orgRoot && existsSync(join(orgRoot, '.envrc'))) {
     if (process.env.DEEPSTAGING_ORG_ROOT) {
-      addCheck('direnv allowed', 'pass', 'Environment loaded');
+      addCheck('Direnv', 'direnv allowed', 'pass', 'Environment loaded');
     } else {
-      addCheck('direnv allowed', 'fail', 'Not allowed', 'Run: cd ' + orgRoot + ' && direnv allow');
+      addCheck('Direnv', 'direnv allowed', 'fail', 'Not allowed', 'Run: cd ' + orgRoot + ' && direnv allow');
     }
   }
 } else {
-  addCheck('direnv', 'warn', 'Not installed', 'Automatic environment loading disabled');
+  addCheck('Direnv', 'direnv', 'warn', 'Not installed', 'Automatic environment loading disabled');
 }
 
 // ============================================================================
@@ -241,25 +244,25 @@ const pathDirs = process.env.PATH?.split(':') || [];
 if (workspaceDir) {
   const scriptsInPath = pathDirs.some(p => p.includes(join(workspaceDir, 'scripts')));
   if (scriptsInPath) {
-    addCheck('Workspace Scripts in PATH', 'pass', 'Workspace automation available');
+    addCheck('PATH', 'Workspace Scripts in PATH', 'pass', 'Workspace automation available');
   } else {
-    addCheck('Workspace Scripts in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
+    addCheck('PATH', 'Workspace Scripts in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
   }
   
   const nodeModulesInPath = pathDirs.some(p => p.includes(join(workspaceDir, 'node_modules', '.bin')));
   if (nodeModulesInPath) {
-    addCheck('Node Modules in PATH', 'pass', 'tsx and tools available');
+    addCheck('PATH', 'Node Modules in PATH', 'pass', 'tsx and tools available');
   } else {
-    addCheck('Node Modules in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
+    addCheck('PATH', 'Node Modules in PATH', 'warn', 'Not in PATH', 'Check direnv configuration');
   }
 }
 
 if (orgRoot) {
   const aliasesInPath = pathDirs.some(p => p.includes(join(orgRoot, '.direnv', 'bin')));
   if (aliasesInPath) {
-    addCheck('Script Aliases in PATH', 'pass', 'Repository script commands available');
+    addCheck('PATH', 'Script Aliases in PATH', 'pass', 'Repository script commands available');
   } else {
-    addCheck('Script Aliases in PATH', 'warn', 'Not in PATH', 'Run: refresh');
+    addCheck('PATH', 'Script Aliases in PATH', 'warn', 'Not in PATH', 'Run: refresh');
   }
 }
 
@@ -274,31 +277,45 @@ let passCount = 0;
 let warnCount = 0;
 let failCount = 0;
 
+// Group checks by category
+const categorizedChecks = new Map<string, CheckResult[]>();
 for (const check of checks) {
-  let icon = '';
-  let color = chalk.white;
-  
-  switch (check.status) {
-    case 'pass':
-      icon = chalk.green('✓');
-      color = chalk.green;
-      passCount++;
-      break;
-    case 'warn':
-      icon = chalk.yellow('⚠');
-      color = chalk.yellow;
-      warnCount++;
-      break;
-    case 'fail':
-      icon = chalk.red('✗');
-      color = chalk.red;
-      failCount++;
-      break;
+  if (!categorizedChecks.has(check.category)) {
+    categorizedChecks.set(check.category, []);
   }
+  categorizedChecks.get(check.category)!.push(check);
+}
+
+// Print checks grouped by category
+for (const [category, categoryChecks] of categorizedChecks) {
+  console.log(chalk.bold.cyan(`\n${category}:`));
   
-  console.log(`${icon} ${color.bold(check.name)}: ${color(check.message)}`);
-  if (check.details) {
-    console.log(`  ${chalk.gray('→ ' + check.details)}`);
+  for (const check of categoryChecks) {
+    let icon = '';
+    let color = chalk.white;
+    
+    switch (check.status) {
+      case 'pass':
+        icon = chalk.green('✓');
+        color = chalk.green;
+        passCount++;
+        break;
+      case 'warn':
+        icon = chalk.yellow('⚠');
+        color = chalk.yellow;
+        warnCount++;
+        break;
+      case 'fail':
+        icon = chalk.red('✗');
+        color = chalk.red;
+        failCount++;
+        break;
+    }
+    
+    console.log(`  ${icon} ${color.bold(check.name)}: ${color(check.message)}`);
+    if (check.details) {
+      console.log(`    ${chalk.gray('→ ' + check.details)}`);
+    }
   }
 }
 
