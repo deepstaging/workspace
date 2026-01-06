@@ -106,9 +106,11 @@ export function printSuccessMessage(): void {
     hookCommand = 'direnv hook fish | source';
   }
   
+  const appendCommand = `echo '${hookCommand}' >> ${configFile}`;
+  
   console.log(chalk.white('  1. Enable direnv shell integration (if not already done):'));
-  console.log(chalk.dim(`     Add to ${configFile}: `) + chalk.cyan(hookCommand));
-  console.log(chalk.dim('     Then run: ') + chalk.cyan(`source ${configFile}`));
+  console.log(chalk.cyan(`     ${appendCommand}`));
+  console.log(chalk.cyan(`     source ${configFile}`));
   console.log(chalk.white('  2. Run `direnv reload` or `cd` out and back in'));
   console.log(chalk.white('  3. Use workspace commands like `repositories-sync`'));
   console.log(chalk.white('  4. Use repo commands like `deepstaging-publish`'));

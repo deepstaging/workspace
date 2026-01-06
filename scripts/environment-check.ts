@@ -224,8 +224,12 @@ if (checkCommand('direnv')) {
       ? `direnv hook fish | source`
       : `eval "$(direnv hook ${shellName})"`;
     
+    const appendCommand = shellName === 'fish'
+      ? `echo '${hookCommand}' >> ${configFile}`
+      : `echo '${hookCommand}' >> ${configFile}`;
+    
     addCheck('Direnv', 'direnv hook', 'warn', 'Not active', 
-      `Add to ${configFile}: ${hookCommand}`);
+      `Run: ${appendCommand} && source ${configFile}`);
   }
   
   // Check if current directory is allowed
