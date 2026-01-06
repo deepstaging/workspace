@@ -360,8 +360,9 @@ async function promptForName(): Promise<string> {
     message: 'Repository name (PascalCase):',
     validate: (input: string) => {
       if (!input.trim()) return 'Name is required';
-      if (!/^[A-Z][a-zA-Z0-9]*$/.test(input.trim())) {
-        return 'Must be PascalCase (e.g., MyAwesomeTool)';
+      // Allow PascalCase with optional dots (e.g., Roslyn.Testing)
+      if (!/^[A-Z][a-zA-Z0-9]*(\.[A-Z][a-zA-Z0-9]*)*$/.test(input.trim())) {
+        return 'Must be PascalCase with optional dots (e.g., MyAwesomeTool or Roslyn.Testing)';
       }
       return true;
     }
