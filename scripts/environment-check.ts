@@ -207,7 +207,25 @@ if (checkCommand('direnv')) {
   if (direnvDir) {
     addCheck('Direnv', 'direnv hook', 'pass', 'Active in current shell');
   } else {
-    addCheck('Direnv', 'direnv hook', 'warn', 'Not active', 'Add eval "$(direnv hook bash)" to shell config');
+    // Detect shell and provide appropriate instructions
+    const shell = process.env.SHELL || '';
+    let shellName = 'bash';
+    let configFile = '~/.bashrc';
+    
+    if (shell.includes('zsh')) {
+      shellName = 'zsh';
+      configFile = '~/.zshrc';
+    } else if (shell.includes('fish')) {
+      shellName = 'fish';
+      configFile = '~/.config/fish/config.fish';
+    }
+    
+    const hookCommand = shellName === 'fish' 
+      ? `direnv hook fish | source`
+      : `eval "$(direnv hook ${shellName})"`;
+    
+    addCheck('Direnv', 'direnv hook', 'warn', 'Not active', 
+      `Add to ${configFile}: ${hookCommand}`);
   }
   
   // Check if current directory is allowed

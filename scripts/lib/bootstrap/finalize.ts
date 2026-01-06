@@ -89,10 +89,26 @@ export function displayHints(ctx: BootstrapContext): void {
 export function printSuccessMessage(): void {
   console.log(chalk.bold.green('✨ Bootstrap complete!\n'));
   console.log(chalk.cyan('Next steps:'));
+  
+  // Detect shell and provide appropriate direnv setup instructions
+  const shell = process.env.SHELL || '';
+  let shellName = 'bash';
+  let configFile = '~/.bashrc';
+  let hookCommand = 'eval "$(direnv hook bash)"';
+  
+  if (shell.includes('zsh')) {
+    shellName = 'zsh';
+    configFile = '~/.zshrc';
+    hookCommand = 'eval "$(direnv hook zsh)"';
+  } else if (shell.includes('fish')) {
+    shellName = 'fish';
+    configFile = '~/.config/fish/config.fish';
+    hookCommand = 'direnv hook fish | source';
+  }
+  
   console.log(chalk.white('  1. Enable direnv shell integration (if not already done):'));
-  console.log(chalk.dim('     For zsh, add to ~/.zshrc:  ') + chalk.cyan('eval "$(direnv hook zsh)"'));
-  console.log(chalk.dim('     For bash, add to ~/.bashrc: ') + chalk.cyan('eval "$(direnv hook bash)"'));
-  console.log(chalk.dim('     Then restart your shell or run: ') + chalk.cyan('source ~/.zshrc'));
+  console.log(chalk.dim(`     Add to ${configFile}: `) + chalk.cyan(hookCommand));
+  console.log(chalk.dim('     Then run: ') + chalk.cyan(`source ${configFile}`));
   console.log(chalk.white('  2. Run `direnv reload` or `cd` out and back in'));
   console.log(chalk.white('  3. Use workspace commands like `repositories-sync`'));
   console.log(chalk.white('  4. Use repo commands like `deepstaging-publish`'));
