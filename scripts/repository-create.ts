@@ -20,6 +20,138 @@ interface TemplateParameter {
   choices?: string[];
 }
 
+/**
+ * Set up Deepstaging foundation files if they don't exist
+ */
+function setupDeepstagingFoundation(repoDir: string, repoName: string): void {
+  const spinner = ora('Setting up Deepstaging foundation...').start();
+  
+  try {
+    // 1. Ensure scripts directory exists
+    const scriptsDir = path.join(repoDir, 'scripts');
+    if (!fs.existsSync(scriptsDir)) {
+      fs.mkdirSync(scriptsDir, { recursive: true });
+    }
+    
+    // 2. Create publish.sh if it doesn't exist
+    const publishScript = path.join(scriptsDir, 'publish.sh');
+    if (!fs.existsSync(publishScript)) {
+      const publishContent = `#!/usr/bin/env bash
+set -euo pipefail
+
+# Publish ${repoName} packages to local NuGet feed
+# Calls the workspace publish script
+
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_SCRIPT_DIR="\${DEEPSTAGING_WORKSPACE_DIR:-\${WORKSPACE_SCRIPT_DIR:-$REPO_DIR/../../workspace}}/scripts"
+
+if [ ! -d "$WORKSPACE_SCRIPT_DIR" ]; then
+  echo "Error: WORKSPACE_SCRIPT_DIR not found at $WORKSPACE_SCRIPT_DIR"
+  exit 1
+fi
+
+# Use DEEPSTAGING_ARTIFACTS_DIR if set, otherwise default to repo-level artifacts
+ARTIFACTS_ARG=""
+if [ -n "\${DEEPSTAGING_ARTIFACTS_DIR:-}" ]; then
+  ARTIFACTS_ARG="--artifacts $DEEPSTAGING_ARTIFACTS_DIR"
+else
+  ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
+fi
+
+exec tsx "$WORKSPACE_SCRIPT_DIR/packages-publish.ts" ${repoName.toLowerCase()} $ARTIFACTS_ARG "$@"
+`;
+      fs.writeFileSync(publishScript, publishContent, { mode: 0o755 });
+    }
+    
+    // 3. Create/update Directory.Build.props at repository root if it doesn't exist
+    const directoryBuildProps = path.join(repoDir, 'Directory.Build.props');
+    const srcDirectoryBuildProps = path.join(repoDir, 'src', 'Directory.Build.props');
+    
+    // Check if either exists
+    if (!fs.existsSync(directoryBuildProps) && !fs.existsSync(srcDirectoryBuildProps)) {
+      const propsContent = `<Project>
+    <PropertyGroup>
+        <!-- Respect DEEPSTAGING_ARTIFACTS_DIR for bin/obj output -->
+        <ArtifactsDir Condition="'$(DEEPSTAGING_ARTIFACTS_DIR)' != ''">$(DEEPSTAGING_ARTIFACTS_DIR)/${repoName}</ArtifactsDir>
+        <ArtifactsDir Condition="'$(DEEPSTAGING_ARTIFACTS_DIR)' == ''">$(MSBuildThisFileDirectory)artifacts</ArtifactsDir>
+        
+        <BaseOutputPath>$(ArtifactsDir)/bin/$(MSBuildProjectName)/</BaseOutputPath>
+        <BaseIntermediateOutputPath>$(ArtifactsDir)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+        <PackageOutputPath>$(ArtifactsDir)/packages/</PackageOutputPath>
+
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        
+        <!-- Default to not packable (enable per-project) -->
+        <IsPackable>false</IsPackable>
+        
+        <!-- Enable source debugging -->
+        <DebugType>embedded</DebugType>
+        <EmbedAllSources>true</EmbedAllSources>
+        
+        <!-- Include symbols in NuGet packages -->
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+</Project>
+`;
+      
+      // Determine where to place it (root or src/ if src exists)
+      const srcDir = path.join(repoDir, 'src');
+      const targetPropsFile = fs.existsSync(srcDir) ? srcDirectoryBuildProps : directoryBuildProps;
+      fs.writeFileSync(targetPropsFile, propsContent);
+    }
+    
+    // 4. Create .gitignore if it doesn't exist
+    const gitignore = path.join(repoDir, '.gitignore');
+    if (!fs.existsSync(gitignore)) {
+      const gitignoreContent = `# Build artifacts
+bin/
+obj/
+artifacts/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# OS files
+.DS_Store
+Thumbs.db
+`;
+      fs.writeFileSync(gitignore, gitignoreContent);
+    }
+    
+    spinner.succeed('Deepstaging foundation configured');
+  } catch (error: any) {
+    spinner.warn('Failed to set up Deepstaging foundation');
+    console.log(chalk.yellow(`  ${error.message}`));
+  }
+}
+
 interface DotnetTemplate {
   templateName: string;
   shortName: string;
@@ -374,7 +506,10 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     process.exit(1);
   }
 
-  // 8. Initialize git
+  // 9. Set up Deepstaging foundation
+  setupDeepstagingFoundation(repoDir, repoName);
+
+  // 10. Initialize git
   if (!options.noGit) {
     const gitSpinner = ora('Initializing git repository...').start();
     
@@ -391,7 +526,7 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     }
   }
 
-  // 9. Generate wrapper scripts
+  // 11. Generate wrapper scripts
   const wrapperSpinner = ora('Generating wrapper scripts...').start();
   
   try {
@@ -430,7 +565,7 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     console.log(chalk.yellow(`  ${error.message}`));
   }
 
-  // 10. Success message
+  // 12. Success message
   console.log(chalk.bold.green(`\n✅ Repository created successfully!\n`));
   console.log(chalk.bold('Next steps:'));
   console.log(chalk.dim(`  cd ${repoDirName}`));
