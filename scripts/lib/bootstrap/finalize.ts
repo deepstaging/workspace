@@ -47,7 +47,7 @@ export function displayHints(ctx: BootstrapContext): void {
   }
   
   console.log(chalk.bold.yellow('\n⚠️  Important Notes:\n'));
-  console.log(chalk.gray('='.repeat(80)));
+  console.log(chalk.dim('='.repeat(80)));
   
   for (const hint of ctx.hints) {
     console.log();
@@ -71,10 +71,10 @@ export function displayHints(ctx: BootstrapContext): void {
     }
     
     console.log(`${icon} ${titleColor.bold(hint.title)}`);
-    console.log(chalk.gray(hint.message));
+    console.log(chalk.white(hint.message));
     
     if (hint.commands && hint.commands.length > 0) {
-      console.log(chalk.gray('\n  To fix, run:'));
+      console.log(chalk.dim('\n  To fix, run:'));
       for (const cmd of hint.commands) {
         console.log(chalk.cyan(`  ${cmd}`));
       }
@@ -82,15 +82,15 @@ export function displayHints(ctx: BootstrapContext): void {
   }
   
   console.log();
-  console.log(chalk.gray('='.repeat(80)));
+  console.log(chalk.dim('='.repeat(80)));
   console.log();
 }
 
 export function printSuccessMessage(): void {
   console.log(chalk.bold.green('✨ Bootstrap complete!\n'));
   console.log(chalk.cyan('Next steps:'));
-  console.log(chalk.cyan('  1. Run `direnv reload` or restart your shell'));
-  console.log(chalk.cyan('  2. Use workspace commands like `repositories-sync`'));
-  console.log(chalk.cyan('  3. Use repo commands like `deepstaging-publish`'));
-  console.log(chalk.cyan('  4. Run `environment-check` anytime to verify setup\n'));
+  console.log(chalk.white('  1. Run `direnv reload` or restart your shell'));
+  console.log(chalk.white('  2. Use workspace commands like `repositories-sync`'));
+  console.log(chalk.white('  3. Use repo commands like `deepstaging-publish`'));
+  console.log(chalk.white('  4. Run `environment-check` anytime to verify setup\n'));
 }
