@@ -14,4 +14,4 @@ Cursor editor and its AI features will use this directory when working in this w
 
 ## Note
 
-This directory is workspace-scoped. Individual repositories (deepstaging, effects, etc.) should not have their own `.cursor` directories to maintain clean, portable repos.
+This directory is workspace-scoped. Individual product repositories should not have their own `.cursor` directories to maintain clean, portable repos.

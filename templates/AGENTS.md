@@ -18,9 +18,9 @@ This is a **multi-repository workspace** with a control plane design:
 │   ├── scripts/                  # Automation scripts (TypeScript)
 │   ├── templates/                # Bootstrap templates
 │   └── .docs/                    # Design documents
-├── repositories/                 # Cloned product repositories
-│   ├── deepstaging/             # Core library
-│   ├── effects/                 # Effects library
+├── repositories/                 # Your product repositories
+│   ├── my-library/              # Example: a library project
+│   ├── my-service/              # Example: a service project
 │   └── [other-repos]/           # Additional repos
 ├── artifacts/                    # Build outputs
 └── packages/                     # Local NuGet feed
@@ -84,8 +84,8 @@ This interactive command:
 Each repository gets auto-generated wrapper commands:
 
 ```bash
-deepstaging-publish        # Publish deepstaging repo packages
-effects-publish            # Publish effects repo packages
+my-library-publish         # Publish my-library repo packages
+my-service-publish         # Publish my-service repo packages
 ```
 
 These are bash scripts in `.direnv/bin/` generated from templates.

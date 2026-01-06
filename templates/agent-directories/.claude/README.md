@@ -14,4 +14,4 @@ Claude Code and other Claude-based tools will automatically use this directory w
 
 ## Note
 
-This directory is workspace-scoped. Individual repositories (deepstaging, effects, etc.) should not have their own `.claude` directories to maintain clean, portable repos.
+This directory is workspace-scoped. Individual product repositories should not have their own `.claude` directories to maintain clean, portable repos.
