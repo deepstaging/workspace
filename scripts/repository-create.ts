@@ -210,6 +210,15 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
   // 6. Build dotnet new command
   let command = `dotnet new ${options.template} -n ${repoName} -o "${repoDir}"`;
   
+  // Add OrgName parameter (required from environment)
+  const orgNameForNamespace = process.env.DEEPSTAGING_ORG_NAME;
+  if (!orgNameForNamespace) {
+    console.log(chalk.red('❌ DEEPSTAGING_ORG_NAME environment variable is required'));
+    console.log(chalk.dim('   Set this in your .envrc file to define your organization namespace'));
+    process.exit(1);
+  }
+  command += ` --OrgName ${orgNameForNamespace}`;
+  
   // Add NuGetFeedName parameter for deepstaging templates
   const orgName = process.env.DEEPSTAGING_LOCAL_NUGET_FEED_NAME || 
                   process.env.DEEPSTAGING_GITHUB_ORG || 
