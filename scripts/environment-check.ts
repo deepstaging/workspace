@@ -59,7 +59,6 @@ const requiredEnvVars = [
   'DEEPSTAGING_ORG_NAME',
   'DEEPSTAGING_WORKSPACE_DIR',
   'DEEPSTAGING_REPOSITORIES_DIR',
-  'DEEPSTAGING_ARTIFACTS_DIR',
   'DEEPSTAGING_LOCAL_NUGET_FEED',
   'DEEPSTAGING_GITHUB_ORG',
 ];
@@ -91,7 +90,6 @@ for (const envVar of requiredEnvVars) {
 const orgRoot = process.env.DEEPSTAGING_ORG_ROOT;
 const workspaceDir = process.env.DEEPSTAGING_WORKSPACE_DIR;
 const repositoriesDir = process.env.DEEPSTAGING_REPOSITORIES_DIR;
-const artifactsDir = process.env.DEEPSTAGING_ARTIFACTS_DIR;
 const localFeed = process.env.DEEPSTAGING_LOCAL_NUGET_FEED;
 
 if (orgRoot) {
@@ -125,14 +123,6 @@ if (repositoriesDir) {
     }
   } else {
     addCheck('Directory Structure', 'Repositories Dir', 'warn', 'Directory does not exist (will be created)', repositoriesDir);
-  }
-}
-
-if (artifactsDir) {
-  if (existsSync(artifactsDir)) {
-    addCheck('Directory Structure', 'Artifacts Dir', 'pass', artifactsDir);
-  } else {
-    addCheck('Directory Structure', 'Artifacts Dir', 'warn', 'Directory does not exist (will be created)', artifactsDir);
   }
 }
 
