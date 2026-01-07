@@ -73,7 +73,6 @@ export function loadEnvFromEnvrc(envrcPath: string, orgRoot: string): Deepstagin
     'DEEPSTAGING_REPOSITORIES_DIR',
     'DEEPSTAGING_GITHUB_ORG',
     'DEEPSTAGING_LOCAL_NUGET_FEED',
-    'DEEPSTAGING_ARTIFACTS_DIR',
   ];
 
   for (const key of required) {
@@ -112,7 +111,6 @@ export function validateEnvironment(env: DeepstagingEnv): boolean {
   // Show other vars
   console.log(chalk.cyan(`  DEEPSTAGING_GITHUB_ORG: ${env.DEEPSTAGING_GITHUB_ORG}`));
   console.log(chalk.cyan(`  DEEPSTAGING_LOCAL_NUGET_FEED: ${env.DEEPSTAGING_LOCAL_NUGET_FEED}`));
-  console.log(chalk.cyan(`  DEEPSTAGING_ARTIFACTS_DIR: ${env.DEEPSTAGING_ARTIFACTS_DIR}`));
 
   return valid;
 }

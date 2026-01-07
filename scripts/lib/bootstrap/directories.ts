@@ -13,7 +13,6 @@ export function createDirectoryStructure(env: DeepstagingEnv, ctx: BootstrapCont
 
   const dirsToCreate = [
     { path: env.DEEPSTAGING_REPOSITORIES_DIR, name: 'Repositories' },
-    { path: env.DEEPSTAGING_ARTIFACTS_DIR, name: 'Artifacts' },
   ];
 
   for (const dir of dirsToCreate) {

@@ -20,7 +20,6 @@ program
   .description('Build and publish all projects in a directory to local NuGet feed')
   .argument('<project-name>', 'Name of the primary project/directory to publish')
   .option('--feed <path>', 'Local NuGet feed path', getDefaultFeedPath())
-  .option('--artifacts <path>', 'Artifacts directory for build output')
   .option('--version-suffix <suffix>', 'Version suffix (e.g., "dev", "alpha")', 'dev')
   .option('--clear', 'Clear local feed before publishing')
   .option('--skip-build', 'Skip building (use existing binaries)')
@@ -39,7 +38,6 @@ async function main() {
   const repositoriesDir = process.env.DEEPSTAGING_REPOSITORIES_DIR || path.join(orgRoot, 'repositories');
   const projectDir = path.join(repositoriesDir, projectName);
   const feedPath = options.feed;
-  const artifactsDir = options.artifacts || path.join(projectDir, 'artifacts');
   
   // Add human-readable sortable timestamp after version suffix
   const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '');
@@ -47,7 +45,6 @@ async function main() {
 
   console.log(`Organization root: ${orgRoot}`);
   console.log(`Project directory: ${projectName}`);
-  console.log(`Artifacts directory: ${chalk.yellow(artifactsDir)}`);
   console.log(`Version suffix: ${chalk.yellow(versionSuffix)}`);
   console.log(`Feed: ${chalk.yellow(feedPath)}`);
   console.log();
@@ -121,13 +118,11 @@ async function main() {
       // Pack
       const packSpinner = createSpinner('Packing...');
       packSpinner.start();
-      // If we built, use --no-build; if we skipped build, don't use --no-build
-      const packagePath = await packProject(project.path, artifactsDir, versionSuffix, !options.skipBuild);
-      packSpinner.succeed('Packed');
+      // Pack directly to feed directory
+      const packagePath = await packProject(project.path, feedPath, versionSuffix, !options.skipBuild);
+      packSpinner.succeed('Packed to feed');
 
-      // Push to feed
       if (packagePath) {
-        await pushToLocalFeed(packagePath, feedPath);
         successCount++;
       }
     } catch (error: any) {

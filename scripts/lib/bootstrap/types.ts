@@ -8,7 +8,6 @@ export interface DeepstagingEnv {
   DEEPSTAGING_REPOSITORIES_DIR: string;
   DEEPSTAGING_GITHUB_ORG: string;
   DEEPSTAGING_LOCAL_NUGET_FEED: string;
-  DEEPSTAGING_ARTIFACTS_DIR: string;
 }
 
 export interface BootstrapOptions {
