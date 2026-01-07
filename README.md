@@ -170,6 +170,26 @@ workspace-environment-check
 workspace-refresh
 ```
 
+### Git Hooks
+
+```bash
+# Install shared hooks in current repository
+workspace-hooks-install
+
+# Install hooks in all repositories
+workspace-hooks-install --all
+
+# Remove hooks from current repository
+workspace-hooks-install --uninstall
+```
+
+**Available hooks:**
+- `pre-commit` - Prevents commits to protected branches (main/master)
+- `commit-msg` - Validates commit message length
+- `pre-push` - Runs repository-specific checks
+
+Hooks are symlinked from `workspace/hooks/`, so updates apply to all repositories automatically. Configure per-repository behavior with `.prekrc`.
+
 ---
 
 ## Templates
@@ -271,7 +291,7 @@ Templates automatically integrate with your workspace environment:
 ```bash
 DEEPSTAGING_ORG_NAME=MyOrg                           # Organization name
 DEEPSTAGING_LOCAL_NUGET_FEED=/path/to/packages     # Local NuGet feed
-DEEPSTAGING_ARTIFACTS_DIR=/path/to/artifacts        # Build output directory
+
 ```
 
 **What Gets Configured:**

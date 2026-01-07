@@ -21,7 +21,8 @@
     "refresh": "tsx scripts/refresh.ts",
     "nuget-licenses-scan": "tsx scripts/nuget-licenses-scan.ts",
     "nuget-config-generate": "tsx scripts/nuget-config-generate.ts",
-    "packages-update": "tsx scripts/packages-update.ts"
+    "packages-update": "tsx scripts/packages-update.ts",
+    "hooks-install": "tsx scripts/hooks-install.ts"
   },
   "bin": {
     "workspace-sync": "./scripts/sync-repos.js"

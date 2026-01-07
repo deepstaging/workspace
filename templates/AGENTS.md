@@ -45,6 +45,7 @@ This is a **multi-repository workspace** with a control plane design:
 | `workspace/scripts/lib/` | Shared library code |
 | `workspace/scripts/bootstrap/` | Bootstrap entry point |
 | `workspace/templates/` | Bootstrap templates (agent dirs, script wrappers) |
+| `workspace/hooks/` | Centralized git hooks (symlinked to repos) |
 | `workspace/.docs/` | Design documents and notes |
 | `workspace/docs/` | User-facing documentation |
 
@@ -123,6 +124,26 @@ Validates the entire workspace setup:
 **Key Files:**
 - `scripts/environment-check.ts` - Validation logic
 
+### Installing Git Hooks
+
+```bash
+workspace-hooks-install                    # Install in current repo
+workspace-hooks-install --all              # Install in all repos
+workspace-hooks-install --uninstall        # Remove from current repo
+```
+
+Installs centralized git hooks from `workspace/hooks/` via symlinks:
+- `pre-commit` - Prevents commits to protected branches
+- `commit-msg` - Validates commit message format
+- `pre-push` - Repository-specific checks via prek
+
+**Key Files:**
+- `scripts/hooks-install.ts` - Installation script
+- `hooks/pre-commit` - Pre-commit hook logic
+- `hooks/commit-msg` - Commit message validation
+- `hooks/pre-push` - Pre-push hook logic
+- `docs/GIT_HOOKS.md` - Full documentation
+
 ---
 
 ## 🔧 Key Scripts & Libraries
@@ -136,6 +157,7 @@ Validates the entire workspace setup:
 | `scripts/repositories-sync.ts` | Sync all repos to GitHub |
 | `scripts/environment-check.ts` | Validate workspace |
 | `scripts/script-aliases-generate.ts` | Generate wrapper commands |
+| `scripts/hooks-install.ts` | Install git hooks via symlinks |
 
 ### Library Modules
 
@@ -161,7 +183,7 @@ All set in `.envrc` at org root:
 | `DEEPSTAGING_ORG_ROOT` | Organization root directory |
 | `DEEPSTAGING_WORKSPACE_DIR` | Workspace directory path |
 | `DEEPSTAGING_REPOSITORIES_DIR` | Product repositories directory |
-| `DEEPSTAGING_ARTIFACTS_DIR` | Build outputs directory |
+
 | `DEEPSTAGING_LOCAL_NUGET_FEED` | Local NuGet packages directory |
 | `DEEPSTAGING_GITHUB_ORG` | GitHub organization name |
 
@@ -277,6 +299,7 @@ console.log(chalk.green('✓ Success'));
 - `README.md` - Workspace overview and quick start
 - `ENVIRONMENT.md` - Environment setup details
 - `docs/WRAPPER_SCRIPTS.md` - Wrapper script system
+- `docs/GIT_HOOKS.md` - Centralized git hooks system
 - `templates/README.md` - Template structure
 - `.docs/*.md` - Design documents and decisions
 

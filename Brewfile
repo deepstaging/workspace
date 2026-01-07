@@ -20,6 +20,7 @@ brew "tree"              # Directory visualization
 brew "ripgrep"           # Fast text search across repos
 brew "fzf"               # Fuzzy finder for interactive selections
 brew "d2"                # Modern diagram scripting language
+brew "prek"              # Git hooks management
 
 # AI assistance
 cask "copilot-cli"       # GitHub Copilot CLI for AI-powered commit messages

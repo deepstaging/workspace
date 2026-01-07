@@ -74,11 +74,13 @@ if (hasDeepstagingOrgName) {
 
 ### 3. Artifacts Directory
 
-**Template:** Uses `DEEPSTAGING_ARTIFACTS_DIR` environment variable
+**Template:** Defaults to local `./artifacts` directory with optional centralization
+
 **Configured:** `Directory.Build.props`
 
 ```xml
 <PropertyGroup>
+  <!-- Optional: Override with DEEPSTAGING_ARTIFACTS_DIR for centralized artifacts -->
   <ArtifactsDir Condition="'$(DEEPSTAGING_ARTIFACTS_DIR)' != ''">
     $(DEEPSTAGING_ARTIFACTS_DIR)/MyProject
   </ArtifactsDir>
@@ -92,7 +94,9 @@ if (hasDeepstagingOrgName) {
 </PropertyGroup>
 ```
 
-**Result:** All build outputs go to workspace-shared artifacts directory
+**Default behavior:** Artifacts stay in repository's local `./artifacts/` directory (standard .NET practice)
+
+**Optional override:** Set `DEEPSTAGING_ARTIFACTS_DIR` environment variable to centralize build outputs across all repositories. Most users should not need this—test via published NuGet packages instead.
 
 ### 4. Package Metadata
 
@@ -131,7 +135,8 @@ export DEEPSTAGING_ORG_NAME="MyOrg"
 export DEEPSTAGING_LOCAL_NUGET_FEED="/Users/me/org/deepstaging/packages"
 
 # Optional but recommended
-export DEEPSTAGING_ARTIFACTS_DIR="/Users/me/org/deepstaging/artifacts"
+# Optional: Centralize artifacts (not recommended for most users)
+# export DEEPSTAGING_ARTIFACTS_DIR="/Users/me/org/deepstaging/artifacts"
 export DEEPSTAGING_ORG_ROOT="/Users/me/org/deepstaging"
 export DEEPSTAGING_WORKSPACE_DIR="$DEEPSTAGING_ORG_ROOT/workspace"
 export DEEPSTAGING_REPOSITORIES_DIR="$DEEPSTAGING_ORG_ROOT/repositories"

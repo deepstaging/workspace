@@ -22,7 +22,6 @@ These environment variables are automatically set by direnv when you're in the D
 | `DEEPSTAGING_ORG_ROOT` | Root directory containing workspace and repositories | `/Users/chris/code/org/deepstaging` |
 | `DEEPSTAGING_WORKSPACE_DIR` | Path to the workspace repository | `$DEEPSTAGING_ORG_ROOT/workspace` |
 | `DEEPSTAGING_REPOSITORIES_DIR` | Path to repositories directory | `$DEEPSTAGING_ORG_ROOT/repositories` |
-| `DEEPSTAGING_ARTIFACTS_DIR` | Shared artifacts directory for builds | `$DEEPSTAGING_ORG_ROOT/artifacts` |
 | `DEEPSTAGING_LOCAL_NUGET_FEED` | Local NuGet feed directory | `$HOME/.nuget/local-feed` |
 | `DEEPSTAGING_GITHUB_ORG` | GitHub organization name | `deepstaging` |
 
@@ -43,11 +42,7 @@ When direnv is active, the following directories are added to `PATH`:
 ├── .envrc                          # Loaded by direnv
 ├── .direnv/                        # Generated script aliases
 │   └── bin/                        # Repository script symlinks
-├── artifacts/                      # DEEPSTAGING_ARTIFACTS_DIR
-│   ├── deepstaging/                # Build outputs by repository
-│   ├── effects/
-│   └── my-roslyn-tool/
-├── packages/                       # DEEPSTAGING_LOCAL_NUGET_FEED (alternate)
+├── packages/                       # DEEPSTAGING_LOCAL_NUGET_FEED
 ├── workspace/                      # DEEPSTAGING_WORKSPACE_DIR
 │   ├── scripts/                    # Shared automation
 │   │   ├── bootstrap.sh
@@ -101,7 +96,7 @@ fi
 
 # Use environment variables for paths
 WORKSPACE_SCRIPTS="$DEEPSTAGING_WORKSPACE_DIR/scripts"
-ARTIFACTS_DIR="${DEEPSTAGING_ARTIFACTS_DIR:-$REPO_DIR/artifacts}"
+ARTIFACTS_DIR="$REPO_DIR/artifacts"
 ```
 
 #### 3. Publish Script Pattern
@@ -121,13 +116,8 @@ if [ -z "${DEEPSTAGING_WORKSPACE_DIR:-}" ]; then
   exit 1
 fi
 
-# Use DEEPSTAGING_ARTIFACTS_DIR if set, otherwise default to repo-level artifacts
-ARTIFACTS_ARG=""
-if [ -n "${DEEPSTAGING_ARTIFACTS_DIR:-}" ]; then
-  ARTIFACTS_ARG="--artifacts $DEEPSTAGING_ARTIFACTS_DIR"
-else
-  ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
-fi
+# Artifacts output controlled by Directory.Build.props (defaults to ./artifacts)
+ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
 
 # Extract project name from directory
 PROJECT_NAME=$(basename "$REPO_DIR")
@@ -147,16 +137,11 @@ Repositories can still work independently without the environment:
 
 ### 1. Shared Artifacts Directory
 
-**Purpose**: Centralize build outputs for cross-repository dependencies
-
-**How it works**:
-- All repositories build to `$DEEPSTAGING_ARTIFACTS_DIR/<repo-name>/`
-- MSBuild projects can reference: `<ArtifactsPath>$(DEEPSTAGING_ARTIFACTS_DIR)</ArtifactsPath>`
-- Enables building against latest local versions
-
-### 2. Local NuGet Feed
-
 **Purpose**: Test packages locally before publishing to public feeds
+
+### 2. Build Artifacts
+
+Each repository manages its own build artifacts in a local `./artifacts/` directory (gitignored). This follows standard .NET practices and keeps repositories self-contained.
 
 **How it works**:
 - Packages published to `$DEEPSTAGING_LOCAL_NUGET_FEED`
