@@ -310,20 +310,21 @@ To add new templates or improve automation:
 
 ## License
 
-All Deepstaging projects are licensed under GPL-v3. Here's what that means in plain English:
+All Deepstaging projects are licensed under RPL-1.5. Here's what that means in plain English:
 
 **You can:**
-- Use this workspace and all generated code for anything (personal projects, work, commercial products)
+- Use this code for personal research
 - Modify it however you want
 - Share it with others
 
-**But if you distribute your code that uses this:**
-- You must share your source code too
-- Your code must also be GPL-v3
-- You can't add restrictions that GPL-v3 doesn't have
+**But when you deploy your code (internally or externally):**
+- You must share your source code immediately
+- You must share all components needed to run it (schemas, scripts, configs, etc.)
+- Your code must also be RPL-1.5
+- This includes running it as a service or using it within your company
 
-**Why GPL-v3?** We want this to stay open source. If you build something cool with it, others should be able to learn from and improve your work too.
+**Why RPL-1.5?** We believe in real reciprocity. If you benefit from this code, the community should benefit from your improvements—no loopholes.
 
-**Internal use is fine:** If you're using this at work and not distributing your software outside your company, you don't have to share anything.
+**No exceptions:** Unlike other licenses, internal business use requires sharing. Personal research and experimentation are the only exceptions.
 
 See the [LICENSE](../LICENSE) file for the full legal text.
