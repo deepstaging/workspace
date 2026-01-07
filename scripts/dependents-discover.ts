@@ -19,7 +19,7 @@ program
   .argument('[search-dir]', 'Directory to search in', '.')
   .parse(process.argv);
 
-const [projectName, searchDir] = program.args;
+const [projectName, searchDir = process.env.DEEPSTAGING_REPOSITORIES_DIR || '.'] = program.args;
 
 async function main() {
   printHeader();
