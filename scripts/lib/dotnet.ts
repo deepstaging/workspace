@@ -11,6 +11,7 @@ export interface DotNetProject {
   path: string;
   type: 'console' | 'classlib' | 'test' | 'analyzer';
   targetFramework: string;
+  packageId?: string;
 }
 
 export async function buildProject(projectPath: string, configuration: string = 'Debug'): Promise<void> {
@@ -61,6 +62,10 @@ export async function getProjectInfo(
     // Parse basic info from csproj
     const tfmMatch = content.match(/<TargetFramework>(.+?)<\/TargetFramework>/);
     const targetFramework = tfmMatch ? tfmMatch[1] : 'net8.0';
+    
+    // Extract PackageId if present
+    const packageIdMatch = content.match(/<PackageId>(.+?)<\/PackageId>/);
+    const packageId = packageIdMatch ? packageIdMatch[1] : undefined;
 
     // Determine project type
     let type: DotNetProject['type'] = 'classlib';
@@ -74,6 +79,7 @@ export async function getProjectInfo(
       path: projectPath,
       type,
       targetFramework,
+      packageId,
     };
   } catch (error) {
     return null;

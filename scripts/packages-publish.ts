@@ -82,7 +82,8 @@ async function main() {
 
   // Display projects
   projects.forEach((proj, index) => {
-    console.log(`  ${index + 1}. ${chalk.cyan(proj.name)} (${proj.type})`);
+    const displayName = proj.packageId || proj.name;
+    console.log(`  ${index + 1}. ${chalk.cyan(displayName)} (${proj.type})`);
   });
   console.log();
 
@@ -104,7 +105,8 @@ async function main() {
   let failureCount = 0;
 
   for (const project of projects) {
-    console.log(chalk.bold(`\n📦 ${project.name}`));
+    const displayName = project.packageId || project.name;
+    console.log(chalk.bold(`\n📦 ${displayName}`));
     console.log('─'.repeat(50));
 
     try {
