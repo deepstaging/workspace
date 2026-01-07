@@ -7,11 +7,62 @@
 import { Command } from 'commander';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { findProjects, buildProject, packProject, sortProjectsByDependencies } from './lib/dotnet.js';
 import { pushToLocalFeed, getDefaultFeedPath, clearLocalFeed } from './lib/nuget.js';
 import { printHeader, printSuccess, printError, printWarning, createSpinner } from './lib/ui.js';
 import { confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
+
+const execAsync = promisify(exec);
+
+async function updateDirectoryPackagesProps(
+  repositoriesDir: string,
+  publishedPackages: string[],
+  versionSuffix: string
+): Promise<void> {
+  // Find all Directory.Packages.props files
+  const { stdout } = await execAsync(
+    `find "${repositoriesDir}" -name "Directory.Packages.props" -type f`,
+    { encoding: 'utf8' }
+  );
+  
+  const propsFiles = stdout.trim().split('\n').filter(Boolean);
+  
+  if (propsFiles.length === 0) {
+    console.log(chalk.yellow('  No Directory.Packages.props files found'));
+    return;
+  }
+
+  // Calculate the full version string (e.g., "1.0.0-dev-20260107084609")
+  const fullVersion = `1.0.0-${versionSuffix}`;
+
+  for (const propsFile of propsFiles) {
+    let content = await fs.readFile(propsFile, 'utf8');
+    let updated = false;
+
+    for (const packageName of publishedPackages) {
+      // Match PackageVersion with Include="PackageName" and update Version attribute
+      const regex = new RegExp(
+        `(<PackageVersion\\s+Include="${packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\s+Version=")[^"]+("\\s*/>)`,
+        'g'
+      );
+      
+      const newContent = content.replace(regex, `$1${fullVersion}$2`);
+      if (newContent !== content) {
+        content = newContent;
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      await fs.writeFile(propsFile, content, 'utf8');
+      const relativePath = path.relative(repositoriesDir, propsFile);
+      console.log(chalk.green(`  ✓ ${relativePath}`));
+    }
+  }
+}
 
 const program = new Command();
 
@@ -103,6 +154,7 @@ async function main() {
   // Build and publish each project
   let successCount = 0;
   let failureCount = 0;
+  const publishedPackages: string[] = [];
 
   for (const project of projects) {
     const displayName = project.packageId || project.name;
@@ -127,11 +179,20 @@ async function main() {
 
       if (packagePath) {
         successCount++;
+        publishedPackages.push(displayName);
       }
     } catch (error: any) {
       printError(`Failed: ${error.message}`);
       failureCount++;
     }
+  }
+
+  // Update Directory.Packages.props files with published versions
+  if (publishedPackages.length > 0) {
+    console.log();
+    console.log(chalk.bold('📝 Updating Directory.Packages.props files...'));
+    console.log('─'.repeat(50));
+    await updateDirectoryPackagesProps(repositoriesDir, publishedPackages, versionSuffix);
   }
 
   // Summary

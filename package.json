@@ -19,7 +19,9 @@
     "solutions-symlink": "tsx scripts/solutions-symlink.ts",
     "script-aliases-generate": "tsx scripts/script-aliases-generate.ts",
     "refresh": "tsx scripts/refresh.ts",
-    "nuget-licenses-scan": "tsx scripts/nuget-licenses-scan.ts"
+    "nuget-licenses-scan": "tsx scripts/nuget-licenses-scan.ts",
+    "nuget-config-generate": "tsx scripts/nuget-config-generate.ts",
+    "packages-update": "tsx scripts/packages-update.ts"
   },
   "bin": {
     "workspace-sync": "./scripts/sync-repos.js"

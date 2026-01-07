@@ -12,6 +12,30 @@ const gitOptions: Partial<SimpleGitOptions> = {
   maxConcurrentProcesses: 6,
 };
 
+/**
+ * Quickly scan for git repositories (name and path only, no git operations)
+ */
+export async function scanRepositoriesQuick(orgRoot: string): Promise<Array<{ name: string; path: string }>> {
+  const entries = await fs.readdir(orgRoot, { withFileTypes: true });
+  const repos: Array<{ name: string; path: string }> = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    
+    const repoPath = path.join(orgRoot, entry.name);
+    const gitDir = path.join(repoPath, '.git');
+    
+    try {
+      await fs.access(gitDir);
+      repos.push({ name: entry.name, path: repoPath });
+    } catch {
+      continue; // Not a git repo
+    }
+  }
+
+  return repos;
+}
+
 export async function scanRepositories(orgRoot: string): Promise<RepositoryInfo[]> {
   const entries = await fs.readdir(orgRoot, { withFileTypes: true });
   const repos: RepositoryInfo[] = [];
