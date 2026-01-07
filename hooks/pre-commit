@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook - Runs before each commit
+# Installed via workspace-hooks-install
+#
+
+set -e
+
+# Get current branch name
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+
+# Prevent commits to protected branches
+protected_branches=("main" "master" "production" "prod")
+for branch in "${protected_branches[@]}"; do
+  if [[ "$current_branch" == "$branch" ]]; then
+    echo "❌ Direct commits to '$branch' are not allowed."
+    echo "   Please create a feature branch and submit a pull request."
+    echo ""
+    echo "   To create a branch:"
+    echo "   git checkout -b feature/your-feature-name"
+    exit 1
+  fi
+done
+
+# If repository has a pre-commit command defined, run it
+if command -v prek &> /dev/null; then
+  # prek will handle repository-specific commands from .prekrc
+  prek run pre-commit 2>/dev/null || true
+fi
+
+exit 0

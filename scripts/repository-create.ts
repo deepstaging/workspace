@@ -52,13 +52,8 @@ if [ ! -d "$WORKSPACE_SCRIPT_DIR" ]; then
   exit 1
 fi
 
-# Use DEEPSTAGING_ARTIFACTS_DIR if set, otherwise default to repo-level artifacts
-ARTIFACTS_ARG=""
-if [ -n "\${DEEPSTAGING_ARTIFACTS_DIR:-}" ]; then
-  ARTIFACTS_ARG="--artifacts $DEEPSTAGING_ARTIFACTS_DIR"
-else
-  ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
-fi
+# Artifacts default to repo-level ./artifacts (controlled by Directory.Build.props)
+ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
 
 exec tsx "$WORKSPACE_SCRIPT_DIR/packages-publish.ts" ${repoName.toLowerCase()} $ARTIFACTS_ARG "$@"
 `;
@@ -73,7 +68,7 @@ exec tsx "$WORKSPACE_SCRIPT_DIR/packages-publish.ts" ${repoName.toLowerCase()} $
     if (!fs.existsSync(directoryBuildProps) && !fs.existsSync(srcDirectoryBuildProps)) {
       const propsContent = `<Project>
     <PropertyGroup>
-        <!-- Respect DEEPSTAGING_ARTIFACTS_DIR for bin/obj output -->
+        <!-- Optional: Use DEEPSTAGING_ARTIFACTS_DIR to centralize build outputs (not recommended) -->
         <ArtifactsDir Condition="'$(DEEPSTAGING_ARTIFACTS_DIR)' != ''">$(DEEPSTAGING_ARTIFACTS_DIR)/${repoName}</ArtifactsDir>
         <ArtifactsDir Condition="'$(DEEPSTAGING_ARTIFACTS_DIR)' == ''">$(MSBuildThisFileDirectory)artifacts</ArtifactsDir>
         

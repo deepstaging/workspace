@@ -175,6 +175,7 @@ const optionalTools = [
   { cmd: 'jq', versionArgs: '--version' },
   { cmd: 'ripgrep', versionArgs: '--version', displayCmd: 'rg' },
   { cmd: 'fzf', versionArgs: '--version' },
+  { cmd: 'prek', versionArgs: '--version' },
 ];
 
 for (const tool of optionalTools) {

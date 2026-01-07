@@ -6,7 +6,6 @@
  * Removes Deepstaging.* packages from:
  * - NuGet global packages cache
  * - Local NuGet feed
- * - Artifacts directory (DEEPSTAGING_ARTIFACTS_DIR or $ORG_ROOT/artifacts)
  * 
  * Usage:
  *   ./purge-caches.ts
@@ -18,27 +17,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { execSync } from 'child_process';
 
-async function removeArtifactsDirectory(orgRoot: string): Promise<boolean> {
-  // Use DEEPSTAGING_ARTIFACTS_DIR or default to artifacts in org root
-  const artifactsDir = process.env.DEEPSTAGING_ARTIFACTS_DIR || path.join(orgRoot, 'artifacts');
-  
-  // Check if directory exists
-  const exists = await fs.access(artifactsDir).then(() => true).catch(() => false);
-  
-  if (!exists) {
-    return false;
-  }
-  
-  // Remove the artifacts directory
-  try {
-    await fs.rm(artifactsDir, { recursive: true, force: true });
-    console.log(`   - ${artifactsDir}`);
-    return true;
-  } catch (error) {
-    console.warn(`   ⚠️  Failed to remove ${artifactsDir}: ${error}`);
-    return false;
-  }
-}
+
 
 async function main() {
   console.log('🧹 Purging Deepstaging packages from NuGet caches...\n');
@@ -85,19 +64,7 @@ async function main() {
       console.log(`✅ Removed ${removed} package(s)\n`);
     }
 
-    // Remove artifacts directory
-    const artifactsDir = process.env.DEEPSTAGING_ARTIFACTS_DIR || path.join(orgRoot, 'artifacts');
-    console.log(`📍 Artifacts directory: ${artifactsDir}\n`);
-    console.log('🗑️  Removing artifacts directory:');
-    const artifactsRemoved = await removeArtifactsDirectory(orgRoot);
-    
-    if (!artifactsRemoved) {
-      console.log('ℹ️  No artifacts directory found\n');
-    } else {
-      console.log(`✅ Removed artifacts directory\n`);
-    }
-
-    console.log('✅ Deepstaging packages and artifacts have been purged!');
+    console.log('✅ Deepstaging packages have been purged!');
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
     process.exit(1);
