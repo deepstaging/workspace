@@ -26,6 +26,7 @@ export function createDirectoryStructure(env: DeepstagingEnv, ctx: BootstrapCont
   }
 
   initializeNuGetFeed(env, ctx);
+  setupDotnetToolManifest(env);
   copyAgentDirectories(env);
   console.log();
 }
@@ -99,6 +100,34 @@ function initializeNuGetFeed(env: DeepstagingEnv, ctx: BootstrapContext): void {
   } catch (error) {
     console.log(chalk.yellow('⚠️  Could not configure NuGet source (dotnet may not be installed yet)'));
   }
+}
+
+function setupDotnetToolManifest(env: DeepstagingEnv): void {
+  const configDir = join(env.DEEPSTAGING_ORG_ROOT, '.config');
+  const manifestPath = join(configDir, 'dotnet-tools.json');
+  const templatePath = join(env.DEEPSTAGING_WORKSPACE_DIR, '.config', 'dotnet-tools.json.template');
+  
+  if (existsSync(manifestPath)) {
+    console.log(chalk.gray('✓ Dotnet tool manifest already exists'));
+    return;
+  }
+  
+  if (!existsSync(templatePath)) {
+    console.log(chalk.yellow('⚠️  Dotnet tool manifest template not found, skipping'));
+    return;
+  }
+  
+  console.log(chalk.cyan('\n  Setting up dotnet tool manifest...'));
+  
+  // Create .config directory if it doesn't exist
+  if (!existsSync(configDir)) {
+    execSync(`mkdir -p "${configDir}"`, { stdio: 'inherit' });
+  }
+  
+  // Copy template
+  cpSync(templatePath, manifestPath);
+  console.log(chalk.green('  ✓ Created dotnet-tools.json at org root'));
+  console.log(chalk.dim(`     Run 'dotnet tool restore' to install tools`));
 }
 
 function copyAgentDirectories(env: DeepstagingEnv): void {

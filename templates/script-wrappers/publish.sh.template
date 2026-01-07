@@ -4,21 +4,14 @@ set -euo pipefail
 # Publish {{REPO_NAME}} packages to local NuGet feed
 # Calls the workspace publish script
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
-WORKSPACE_SCRIPT_DIR="${DEEPSTAGING_WORKSPACE_DIR:-${WORKSPACE_SCRIPT_DIR:-$REPO_DIR/../../workspace}}/scripts"
-
-if [ ! -d "$WORKSPACE_SCRIPT_DIR" ]; then
-  echo "Error: WORKSPACE_SCRIPT_DIR not found at $WORKSPACE_SCRIPT_DIR"
-  exit 1
-fi
+WORKSPACE_SCRIPT_DIR="${DEEPSTAGING_WORKSPACE_DIR}/scripts"
 
 # Use DEEPSTAGING_ARTIFACTS_DIR if set, otherwise default to repo-level artifacts
 ARTIFACTS_ARG=""
 if [ -n "${DEEPSTAGING_ARTIFACTS_DIR:-}" ]; then
   ARTIFACTS_ARG="--artifacts $DEEPSTAGING_ARTIFACTS_DIR"
 else
-  ARTIFACTS_ARG="--artifacts $REPO_DIR/artifacts"
+  ARTIFACTS_ARG="--artifacts ${DEEPSTAGING_REPOSITORIES_DIR}/{{REPO_KEY}}/artifacts"
 fi
 
 exec tsx "$WORKSPACE_SCRIPT_DIR/packages-publish.ts" {{REPO_KEY}} $ARTIFACTS_ARG "$@"
