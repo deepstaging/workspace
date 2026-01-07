@@ -254,6 +254,60 @@ dotnet new install ./bin/Deepstaging.Templates.*.nupkg
 
 ---
 
+## Template System
+
+### Available Templates
+
+| Template | Description | Use Case |
+|----------|-------------|----------|
+| `deepstaging-roslyn` | Complete Roslyn tooling suite | Source generators, analyzers, code fixes |
+| `deepstaging-empty` | Minimal Deepstaging repository | Custom projects with workspace integration |
+
+### Auto-Configuration
+
+Templates automatically integrate with your workspace environment:
+
+**Environment Variables:**
+```bash
+DEEPSTAGING_ORG_NAME=MyOrg                           # Organization name
+DEEPSTAGING_LOCAL_NUGET_FEED=/path/to/packages     # Local NuGet feed
+DEEPSTAGING_ARTIFACTS_DIR=/path/to/artifacts        # Build output directory
+```
+
+**What Gets Configured:**
+
+1. **Root Namespace** - `MyOrg.ProjectName` (uses org name as prefix)
+2. **NuGet.Config** - Local feed path replaced with actual directory
+3. **Artifacts** - Build outputs go to workspace-shared directory
+4. **Package Feed** - Feed source name matches organization name
+
+**Example:**
+```bash
+# With DEEPSTAGING_ORG_NAME=Acme
+workspace-repository-create -n MyTool
+
+# Generates:
+# - Root namespace: Acme.MyTool
+# - NuGet feed: "Acme" → /path/to/packages
+# - Artifacts: /path/to/artifacts/MyTool
+```
+
+### Template Parameters
+
+All parameters are automatically set when using `workspace-repository-create`:
+
+- `--DeepstagingOrgName` - From `DEEPSTAGING_ORG_NAME`
+- `--DeepstagingFeedName` - From `DEEPSTAGING_ORG_NAME`
+- `--DeepstagingLocalNugetFeed` - From `DEEPSTAGING_LOCAL_NUGET_FEED`
+
+Interactive prompts only ask for **template-specific** options:
+- `--IncludeSample` (roslyn template)
+- `--IncludeDocs` (roslyn template)
+
+See [templates repository](../repositories/templates/) for more details.
+
+---
+
 ## TypeScript Automation
 
 All workspace scripts use TypeScript for:

@@ -487,6 +487,17 @@ async function createRepository(options: CreateRepositoryOptions): Promise<void>
     command += ` --DeepstagingFeedName "${orgName}"`;
   }
   
+  const hasDeepstagingLocalNugetFeed = templateParams.some(p => p.name === 'DeepstagingLocalNugetFeed');
+  if (hasDeepstagingLocalNugetFeed) {
+    const localFeed = process.env.DEEPSTAGING_LOCAL_NUGET_FEED;
+    if (!localFeed) {
+      console.log(chalk.red('❌ DEEPSTAGING_LOCAL_NUGET_FEED environment variable is required'));
+      console.log(chalk.dim('   Set this in your .envrc file'));
+      process.exit(1);
+    }
+    command += ` --DeepstagingLocalNugetFeed "${localFeed}"`;
+  }
+  
   // Add user-provided template parameters
   if (options.templateParams) {
     for (const [key, value] of Object.entries(options.templateParams)) {

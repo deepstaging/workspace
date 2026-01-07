@@ -13,8 +13,8 @@ export interface DotNetProject {
   targetFramework: string;
 }
 
-export async function buildProject(projectPath: string): Promise<void> {
-  execSync('dotnet build', {
+export async function buildProject(projectPath: string, configuration: string = 'Debug'): Promise<void> {
+  execSync(`dotnet build --configuration ${configuration}`, {
     cwd: projectPath,
     stdio: 'inherit',
   });
@@ -31,11 +31,12 @@ export async function packProject(
   projectPath: string,
   outputDir: string,
   versionSuffix?: string,
-  noBuild: boolean = true
+  noBuild: boolean = true,
+  configuration: string = 'Debug'
 ): Promise<string> {
   const versionArg = versionSuffix ? `--version-suffix ${versionSuffix}` : '';
   const noBuildArg = noBuild ? '--no-build' : '';
-  const result = execSync(`dotnet pack -o "${outputDir}" ${noBuildArg} ${versionArg}`, {
+  const result = execSync(`dotnet pack -o "${outputDir}" ${noBuildArg} ${versionArg} --configuration ${configuration}`, {
     cwd: projectPath,
     encoding: 'utf8',
   });

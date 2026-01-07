@@ -21,6 +21,7 @@ program
   .argument('<project-name>', 'Name of the primary project/directory to publish')
   .option('--feed <path>', 'Local NuGet feed path', getDefaultFeedPath())
   .option('--version-suffix <suffix>', 'Version suffix (e.g., "dev", "alpha")', 'dev')
+  .option('--configuration <config>', 'Build configuration', 'Release')
   .option('--clear', 'Clear local feed before publishing')
   .option('--skip-build', 'Skip building (use existing binaries)')
   .parse(process.argv);
@@ -111,7 +112,7 @@ async function main() {
       if (!options.skipBuild) {
         const buildSpinner = createSpinner('Building...');
         buildSpinner.start();
-        await buildProject(project.path);
+        await buildProject(project.path, options.configuration);
         buildSpinner.succeed('Built');
       }
 
@@ -119,7 +120,7 @@ async function main() {
       const packSpinner = createSpinner('Packing...');
       packSpinner.start();
       // Pack directly to feed directory
-      const packagePath = await packProject(project.path, feedPath, versionSuffix, !options.skipBuild);
+      const packagePath = await packProject(project.path, feedPath, versionSuffix, !options.skipBuild, options.configuration);
       packSpinner.succeed('Packed to feed');
 
       if (packagePath) {
