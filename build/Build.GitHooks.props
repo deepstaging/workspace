@@ -1,0 +1,40 @@
+<!-- SPDX-FileCopyrightText: 2024-present Deepstaging -->
+<!-- SPDX-License-Identifier: RPL-1.5 -->
+<Project>
+  <!--
+    Build.GitHooks.props (workspace-level)
+
+    Automatically restores dotnet tools and installs Husky.Net git hooks.
+    Runs before Restore to ensure hooks are in place for new clones.
+    Set HUSKY=0 environment variable to skip hook installation (e.g., in CI).
+
+    Requires $(DeepstagingRepoRoot) to be set by the importing repo.
+    Override: place a Build.GitHooks.props in the repo's build/ directory.
+  -->
+
+  <Target Name="RestoreToolsAndInstallHusky"
+          BeforeTargets="Restore"
+          Condition="'$(HUSKY)' != '0' AND '$(DesignTimeBuild)' != 'true'">
+
+    <PropertyGroup>
+      <HuskyMarkerFile>$(DeepstagingRepoRoot).husky/.installed</HuskyMarkerFile>
+    </PropertyGroup>
+
+    <Exec Command="dotnet tool restore"
+          WorkingDirectory="$(DeepstagingRepoRoot)"
+          Condition="!Exists('$(HuskyMarkerFile)')"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="High"/>
+
+    <Exec Command="dotnet husky install"
+          WorkingDirectory="$(DeepstagingRepoRoot)"
+          Condition="!Exists('$(HuskyMarkerFile)')"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="High"/>
+
+    <Touch Files="$(HuskyMarkerFile)"
+           AlwaysCreate="true"
+           Condition="!Exists('$(HuskyMarkerFile)')"/>
+  </Target>
+
+</Project>
