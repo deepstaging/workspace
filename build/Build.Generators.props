@@ -1,0 +1,20 @@
+<!-- SPDX-FileCopyrightText: 2024-present Deepstaging -->
+<!-- SPDX-License-Identifier: RPL-1.5 -->
+<Project>
+  <!--
+    Build.Generators.props (workspace-level)
+
+    Source generator output settings.
+    Emits generated files to obj/Generated/ for inspection without double-compiling.
+
+    Imported by each repo's Directory.Build.props.
+  -->
+
+  <PropertyGroup>
+    <!-- Write generated source files to disk so they're visible in IDE and version control -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
+    <!-- Place generated files under obj/ so they're excluded from source globbing -->
+    <CompilerGeneratedFilesOutputPath>obj/Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+</Project>

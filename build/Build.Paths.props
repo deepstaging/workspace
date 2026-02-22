@@ -1,0 +1,20 @@
+<!-- SPDX-FileCopyrightText: 2024-present Deepstaging -->
+<!-- SPDX-License-Identifier: RPL-1.5 -->
+<Project>
+  <!--
+    Build.Paths.props (workspace-level)
+
+    Shared output paths for the workspace layout.
+    All repos output NuGet packages to the workspace-root packages/ directory.
+
+    Imported by each repo's Directory.Build.props.
+  -->
+
+  <PropertyGroup>
+    <!-- Workspace root: two levels up from any repo root (repos/<name>/) -->
+    <DeepstagingWorkspaceRoot>$(MSBuildThisFileDirectory)../</DeepstagingWorkspaceRoot>
+
+    <!-- All repos share a single local NuGet feed -->
+    <PackageOutputPath>$(DeepstagingWorkspaceRoot)packages/</PackageOutputPath>
+  </PropertyGroup>
+</Project>
