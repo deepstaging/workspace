@@ -1,404 +1,82 @@
 # Deepstaging Workspace
 
-**A powerful control plane for multi-repository .NET development.**
-
-Create production-ready repositories from templates, orchestrate builds, manage dependencies, and automate workflows—all from a single command center.
-
----
-
-## 🚀 Why Use This Workspace?
-
-### 1. **Template-Driven Repository Creation**
-
-Create complete, production-ready repositories in seconds:
-
-```bash
-workspace-repository-create
-```
-
-**Available Templates:**
-- 🔧 **deepstaging-roslyn** - Complete Roslyn tooling suite (analyzers, generators, code fixes, tests)
-- 🎯 More templates coming soon
-
-Each template generates:
-- ✅ Full project structure with best practices
-- ✅ Pre-configured analyzers and source generators
-- ✅ Test projects with examples
-- ✅ NuGet packaging setup
-- ✅ Git repository initialized
-- ✅ Documentation scaffolding
-- ✅ Workspace integration scripts (generated from templates)
-
-### 2. **Zero-Config Development Environment**
-
-Bootstrap once, work anywhere:
-- **direnv** auto-loads tools and commands
-- **TypeScript automation** with type safety
-- **Local NuGet feed** for testing packages
-- **Interactive CLI** with beautiful terminal UI
-
-### 3. **Multi-Repository Orchestration**
-
-Manage multiple repositories from one place:
-- Build, test, and publish across all repos
-- Track package dependencies
-- AI-powered commit messages
-- Batch operations with interactive selection
-
----
+Developer tooling for the Deepstaging multi-repo ecosystem.
 
 ## Quick Start
 
-### Prerequisites
-
-**Homebrew** (macOS/Linux):
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+# Clone all repos side-by-side:
+#   ~/org/deepstaging/
+#   ├── roslyn/
+#   ├── deepstaging/
+#   ├── deepstaging-web/
+#   ├── assets/
+#   ├── .github/
+#   └── workspace/        ← you are here
 
-### Installation
-
-```bash
-# 1. Clone workspace
-mkdir -p ~/code/org/deepstaging
-cd ~/code/org/deepstaging
-git clone git@github.com:deepstaging/workspace.git
-cd workspace
-
-# 2. Run bootstrap (installs everything)
+# Bootstrap (installs tools, hooks, local NuGet feed):
 ./bootstrap.sh
-
-# 3. Activate direnv
-eval "$(direnv hook zsh)"  # Add to ~/.zshrc
-source ~/.zshrc
-direnv allow
 ```
 
-**What bootstrap installs:**
-- Required CLI tools (`gh`, `direnv`, `node`, `jq`, `ripgrep`, `fzf`)
-- Deepstaging.Templates for scaffolding
-- npm packages for TypeScript automation
-- Local NuGet feed configuration
+## Scripts
 
-### Create Your First Repository
+All scripts are in `scripts/` and added to `PATH` via direnv.
+
+| Script | Purpose |
+|--------|---------|
+| `build-all.sh` | Cascading build: roslyn → deepstaging → web |
+| `pack-local.sh` | Pack NuGet packages to local feed |
+| `purge-caches.sh` | Remove bin/obj from all repos |
+| `check-env.sh` | Validate tools and environment |
+
+### build-all.sh
 
 ```bash
-# Interactive - choose template and configure
-workspace-repository-create
-
-# Direct - specify template and name
-workspace-repository-create -t deepstaging-roslyn -n MyAwesomeTool
+build-all.sh              # Build all (Release)
+build-all.sh --test       # Build + run tests
+build-all.sh --skip web   # Skip deepstaging-web
+build-all.sh --debug      # Debug configuration
 ```
 
-This generates a complete repository at `../MyAwesomeTool/` with:
-- Analyzer project (diagnostics and rules)
-- Generator project (source generation)
-- CodeFixes project (quick fixes)
-- Test project (unit tests with examples)
-- Contracts project (attributes/interfaces)
-- NuGet packaging configured
-
-### Build & Publish
+### pack-local.sh
 
 ```bash
-cd ../MyAwesomeTool
-
-# Build and test
-dotnet build
-dotnet test
-
-# Publish to local NuGet feed (for testing)
-workspace-packages-publish MyAwesomeTool
-
-# Publish to NuGet.org (manual - use dotnet CLI)
-dotnet nuget push ./artifacts/**/*.nupkg --source https://api.nuget.org/v3/index.json --api-key YOUR_KEY
+pack-local.sh                           # Pack all to local feed
+pack-local.sh --version-suffix dev.42   # Custom version suffix
+pack-local.sh --skip web                # Skip a repo
 ```
 
----
+## Git Hooks
 
-## Core Commands
+Shared hooks are installed into all sibling repos by `bootstrap.sh`.
 
-All commands available after direnv activation:
-
-### Repository Management
+| Hook | Behavior |
+|------|----------|
+| `pre-commit` | Blocks direct commits to main/master |
+| `commit-msg` | Enforces minimum 10-char commit messages |
 
 ```bash
-# Create new repository from template
-workspace-repository-create                    # Interactive
-workspace-repository-create -t deepstaging-roslyn -n MyTool
+# Reinstall hooks manually:
+./hooks/install.sh
 
-# Sync repositories with GitHub
-workspace-repositories-sync                    # Pull latest changes
-workspace-repositories-sync --push            # Commit and push all
-
-# Show package dependency graph
-workspace-dependents-discover
+# Remove hooks:
+./hooks/install.sh --remove
 ```
 
-### Package Management
+## Environment
 
-```bash
-# Publish packages to local feed (for testing)
-workspace-packages-publish MyAwesomeTool
+Uses [direnv](https://direnv.net/) for automatic environment setup. Key variables:
 
-# Scan licenses
-workspace-nuget-licenses-scan
-```
+| Variable | Value |
+|----------|-------|
+| `DEEPSTAGING_ORG_ROOT` | Parent directory containing all repos |
+| `DEEPSTAGING_WORKSPACE_DIR` | This directory |
+| `DEEPSTAGING_LOCAL_NUGET_FEED` | `$ORG_ROOT/packages` — local NuGet source |
 
-**Note:** Publishing to NuGet.org should be done via CI/CD or manually with `dotnet nuget push`.
-
-### Project Management
-
-```bash
-# Add new project to existing repository
-workspace-project-create
-
-# Generate .slnx solution files in workspace root
-workspace-solutions-symlink
-```
-
-### Maintenance
-
-```bash
-# Clear build artifacts
-workspace-caches-purge
-
-# Check environment health
-workspace-environment-check
-
-# Re-run bootstrap
-workspace-refresh
-```
-
-### Git Hooks
-
-```bash
-# Install shared hooks in current repository
-workspace-hooks-install
-
-# Install hooks in all repositories
-workspace-hooks-install --all
-
-# Remove hooks from current repository
-workspace-hooks-install --uninstall
-```
-
-**Available hooks:**
-- `pre-commit` - Prevents commits to protected branches (main/master)
-- `commit-msg` - Validates commit message length
-- `pre-push` - Runs repository-specific checks
-
-Hooks are symlinked from `workspace/hooks/`, so updates apply to all repositories automatically. Configure per-repository behavior with `.prekrc`.
-
----
-
-## Templates
-
-### deepstaging-roslyn
-
-Complete Roslyn tooling project with everything you need:
-
-**Generated Structure:**
-```
-MyAwesomeTool/
-├── src/
-│   └── MyAwesomeTool/
-│       ├── MyAwesomeTool.Analyzers/      # Diagnostic rules
-│       ├── MyAwesomeTool.Generators/     # Source generators
-│       ├── MyAwesomeTool.CodeFixes/      # Quick fixes
-│       ├── MyAwesomeTool.Contracts/      # Public API
-│       └── MyAwesomeTool.Nuget/          # Package bundling
-├── tests/
-│   └── MyAwesomeTool.Tests/              # Unit tests
-├── .gitignore
-└── README.md
-```
-
-**Features:**
-- Pre-configured analyzer diagnostics
-- Source generator scaffolding
-- Code fix provider templates
-- Test helpers and examples
-- NuGet packaging with analyzers bundle
-- Following Deepstaging conventions
-
-### Installing Templates Manually
-
-Templates are installed during bootstrap, but you can update them:
-
-```bash
-cd [path-to-templates-repo]
-dotnet pack
-dotnet new install ./bin/Deepstaging.Templates.*.nupkg
-```
-
----
-
-## Architecture
-
-### Directory Structure
+## Dependency Graph
 
 ```
-~/code/org/deepstaging/
-├── workspace/                       # This repo (control plane)
-│   ├── .docs/                      # Permanent knowledge base
-│   ├── scripts/                    # TypeScript automation
-│   ├── .envrc                      # Direnv configuration
-│   └── package.json                # npm dependencies
-│
-└── [your-repositories]/             # Created via workspace-repository-create
-    ├── MyAwesomeTool/
-    ├── AnotherProject/
-    └── ...
+roslyn → deepstaging → deepstaging-web
 ```
 
-### Key Concepts
-
-**Workspace = Control Plane**
-- Centralized automation and tooling
-- Template-driven repository scaffolding
-- AI agent state (`.claude/`, `.copilot/`, `.cursor/`)
-- Knowledge base (`.docs/`)
-
-**Generated Repositories = Independent & Portable**
-- Complete, standalone projects
-- Production-ready code
-- Can be cloned and used independently
-- Follow Deepstaging conventions
-
-**Templates = Battle-Tested Scaffolding**
-- Proven project structures
-- Best practices built-in
-- Pre-configured tooling
-- Instant productivity
-
----
-
-## Template System
-
-### Available Templates
-
-| Template | Description | Use Case |
-|----------|-------------|----------|
-| `deepstaging-roslyn` | Complete Roslyn tooling suite | Source generators, analyzers, code fixes |
-| `deepstaging-empty` | Minimal Deepstaging repository | Custom projects with workspace integration |
-
-### Auto-Configuration
-
-Templates automatically integrate with your workspace environment:
-
-**Environment Variables:**
-```bash
-DEEPSTAGING_ORG_NAME=MyOrg                           # Organization name
-DEEPSTAGING_LOCAL_NUGET_FEED=/path/to/packages     # Local NuGet feed
-
-```
-
-**What Gets Configured:**
-
-1. **Root Namespace** - `MyOrg.ProjectName` (uses org name as prefix)
-2. **NuGet.Config** - Local feed path replaced with actual directory
-3. **Artifacts** - Build outputs go to workspace-shared directory
-4. **Package Feed** - Feed source name matches organization name
-
-**Example:**
-```bash
-# With DEEPSTAGING_ORG_NAME=Acme
-workspace-repository-create -n MyTool
-
-# Generates:
-# - Root namespace: Acme.MyTool
-# - NuGet feed: "Acme" → /path/to/packages
-# - Artifacts: /path/to/artifacts/MyTool
-```
-
-### Template Parameters
-
-All parameters are automatically set when using `workspace-repository-create`:
-
-- `--DeepstagingOrgName` - From `DEEPSTAGING_ORG_NAME`
-- `--DeepstagingFeedName` - From `DEEPSTAGING_ORG_NAME`
-- `--DeepstagingLocalNugetFeed` - From `DEEPSTAGING_LOCAL_NUGET_FEED`
-
-Interactive prompts only ask for **template-specific** options:
-- `--IncludeSample` (roslyn template)
-- `--IncludeDocs` (roslyn template)
-
-See [templates repository](../repositories/templates/) for more details.
-
----
-
-## TypeScript Automation
-
-All workspace scripts use TypeScript for:
-- ✅ Type safety - Catch errors before runtime
-- ✅ Rich libraries - Professional terminal UI
-- ✅ Async/await - Clean asynchronous code
-- ✅ Familiar syntax - Like C# with interfaces, classes, generics
-
-**Run scripts via npm:**
-```bash
-npm run repository-create
-npm run packages-publish
-npm run repositories-sync
-```
-
-**Or use direnv aliases:**
-```bash
-workspace-repository-create
-workspace-packages-publish
-workspace-repositories-sync
-```
-
----
-
-## Documentation
-
-### Core Documentation
-- **[WRAPPER_SCRIPTS.md](docs/WRAPPER_SCRIPTS.md)** - How wrapper scripts are generated for new repositories
-- **Workspace Docs**: `.docs/` - Architecture, conventions, guides
-- **Session Notes**: `.session/` - Temporary working notes (gitignored)
-- **Generated Repos**: Each repo has its own user-facing documentation
-
----
-
-## AI Agent Configuration
-
-See `.copilot-instructions.md` for agent behavior and workspace conventions.
-
-All AI agents (Claude, Copilot, Cursor) share workspace context for consistency.
-
----
-
-## Contributing
-
-To add new templates or improve automation:
-
-1. Create templates in a separate repository
-2. Package as `dotnet new` templates
-3. Update bootstrap to install them
-4. Add TypeScript scripts to `scripts/`
-5. Document in `.docs/`
-
----
-
-## License
-
-All Deepstaging projects are licensed under RPL-1.5. Here's what that means in plain English:
-
-**You can:**
-- Use this code for personal research
-- Modify it however you want
-- Share it with others
-
-**But when you deploy your code (internally or externally):**
-- You must share your source code immediately
-- You must share all components needed to run it (schemas, scripts, configs, etc.)
-- Your code must also be RPL-1.5
-- This includes running it as a service or using it within your company
-
-**Why RPL-1.5?** We believe in real reciprocity. If you benefit from this code, the community should benefit from your improvements—no loopholes.
-
-**No exceptions:** Unlike other licenses, internal business use requires sharing. Personal research and experimentation are the only exceptions.
-
-See the [LICENSE](../LICENSE) file for the full legal text.
+Build and pack scripts follow this order automatically.

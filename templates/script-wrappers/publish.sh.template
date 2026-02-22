@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Publish {{REPO_NAME}} packages to local NuGet feed
-# Calls the workspace publish script
-
-WORKSPACE_SCRIPT_DIR="${DEEPSTAGING_WORKSPACE_DIR}/scripts"
-
-exec tsx "$WORKSPACE_SCRIPT_DIR/packages-publish.ts" {{REPO_KEY}} "$@"
