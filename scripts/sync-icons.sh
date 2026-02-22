@@ -17,15 +17,15 @@ MARKER="$ASSETS_DIR/.icons-built"
 # Icon name → repo-relative destination
 # Format: PackageName:repo/path/to/project
 ICON_MAP=(
-  "Deepstaging.Roslyn:roslyn/src/Deepstaging.Roslyn"
-  "Deepstaging.Roslyn.LanguageExt:roslyn/src/Deepstaging.Roslyn.LanguageExt"
-  "Deepstaging.Roslyn.Testing:roslyn/src/Deepstaging.Roslyn.Testing"
-  "Deepstaging.Roslyn.TypeScript:roslyn/src/Deepstaging.Roslyn.TypeScript"
-  "Deepstaging.Roslyn.TypeScript.Testing:roslyn/src/Deepstaging.Roslyn.TypeScript.Testing"
+  "Deepstaging.Roslyn:roslyn/src/Core/Deepstaging.Roslyn"
+  "Deepstaging.Roslyn.LanguageExt:roslyn/src/LanguageExt/Deepstaging.Roslyn.LanguageExt"
+  "Deepstaging.Roslyn.Testing:roslyn/src/Core/Deepstaging.Roslyn.Testing"
+  "Deepstaging.Roslyn.TypeScript:roslyn/src/TypeScript/Deepstaging.Roslyn.TypeScript"
+  "Deepstaging.Roslyn.TypeScript.Testing:roslyn/src/TypeScript/Deepstaging.Roslyn.TypeScript.Testing"
   "Deepstaging.Templates:roslyn/templates"
-  "Deepstaging:deepstaging/src/Deepstaging"
-  "Deepstaging.Testing:deepstaging/src/Deepstaging.Testing"
-  "Deepstaging.Web:deepstaging-web/src/Deepstaging.Web"
+  "Deepstaging:deepstaging/src/Core/Deepstaging"
+  "Deepstaging.Testing:deepstaging/src/Testing/Deepstaging.Testing"
+  "Deepstaging.Web:deepstaging-web/src/Core/Deepstaging.Web"
 )
 
 CHECK_ONLY=false
