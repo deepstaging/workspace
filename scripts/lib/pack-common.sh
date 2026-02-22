@@ -47,7 +47,7 @@ pack_init() {
   fi
   ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-}"
   OUTPUT_DIR="${ORG_ROOT:+$ORG_ROOT/packages}"
-  OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/../../artifacts/packages}"
+  OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/../../packages}"
 
   # Version suffix: local uses timestamp, CI uses git commit count
   if [[ -n "${CI:-}" ]]; then
