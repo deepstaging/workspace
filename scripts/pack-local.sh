@@ -25,6 +25,13 @@ done
 
 mkdir -p "$FEED"
 
+# Sync icons from assets repo before packing
+echo "═══════════════════════════════════════════"
+echo "  Syncing package icons"
+echo "═══════════════════════════════════════════"
+"$(dirname "${BASH_SOURCE[0]}")/sync-icons.sh"
+echo ""
+
 should_skip() {
   for s in "${SKIP[@]+"${SKIP[@]}"}"; do
     [[ "$s" == "$1" ]] && return 0

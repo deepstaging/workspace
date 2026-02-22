@@ -41,6 +41,7 @@ All scripts are in `scripts/` and added to `PATH` via direnv.
 | `build-all.sh` | Cascading build: roslyn → deepstaging → web |
 | `pack-local.sh` | Pack NuGet packages to local feed |
 | `purge-caches.sh` | Remove bin/obj from all repos |
+| `sync-icons.sh` | Build & distribute package icons from assets repo |
 | `check-env.sh` | Validate tools and environment |
 
 ### build-all.sh
