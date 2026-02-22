@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Clone all Deepstaging repositories into repos/.
 #
 # Usage:
@@ -9,18 +9,18 @@ set -euo pipefail
 
 ORG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOS_DIR="$ORG_ROOT/repos"
+REPOS_CONF="$ORG_ROOT/repos.conf"
 GITHUB_ORG="deepstaging"
 USE_SSH=true
 
 [[ "${1:-}" == "--https" ]] && USE_SSH=false
 
-REPOS=(
-  roslyn
-  deepstaging
-  deepstaging-web
-  assets
-  .github
-)
+if [[ ! -f "$REPOS_CONF" ]]; then
+  echo "❌ $REPOS_CONF not found"
+  exit 1
+fi
+
+mapfile -t REPOS < <(grep -v '^\s*#' "$REPOS_CONF" | grep -v '^\s*$')
 
 repo_url() {
   local name="$1"

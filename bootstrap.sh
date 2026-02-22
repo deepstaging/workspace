@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Deepstaging workspace bootstrap.
 #
 # Run once after cloning the workspace to set up your dev environment:

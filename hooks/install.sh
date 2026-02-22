@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install shared git hooks into all cloned repositories.
 #
 # Usage:

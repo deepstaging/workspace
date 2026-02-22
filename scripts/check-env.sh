@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Validate that all required tools are installed and workspace is configured.
 
 set -euo pipefail
@@ -60,7 +60,13 @@ echo "Repositories"
 echo "─────────────────────────────────────"
 
 ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-for repo in roslyn deepstaging deepstaging-web assets .github; do
+REPOS_CONF="$ORG_ROOT/repos.conf"
+
+if [[ ! -f "$REPOS_CONF" ]]; then
+  echo "  ⚠️  $REPOS_CONF not found, skipping repo check"
+else
+mapfile -t _repos < <(grep -v '^\s*#' "$REPOS_CONF" | grep -v '^\s*$')
+for repo in "${_repos[@]}"; do
   if [[ -d "$ORG_ROOT/repos/$repo/.git" ]]; then
     branch=$(cd "$ORG_ROOT/repos/$repo" && git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
     printf "  ✅ %-20s (%s)\n" "$repo" "$branch"
@@ -70,6 +76,7 @@ for repo in roslyn deepstaging deepstaging-web assets .github; do
     inc_fail
   fi
 done
+fi
 
 echo ""
 echo "Local NuGet Feed"

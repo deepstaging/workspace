@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Cascading build across all repositories in dependency order.
 #
 # Dependency graph:

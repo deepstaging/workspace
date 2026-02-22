@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Pack NuGet packages and publish to the local feed.
 #
 # Dependency graph:

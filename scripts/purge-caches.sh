@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Remove bin/ and obj/ directories from all repositories.
 #
 # Usage:
