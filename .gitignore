@@ -1,3 +1,9 @@
+# Cloned repositories (populated by init.sh)
+repos/
+
+# Local NuGet feed
+packages/
+
 # Environment
 .envrc.local
 .env

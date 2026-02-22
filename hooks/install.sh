@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install shared git hooks into all sibling repositories.
+# Install shared git hooks into all cloned repositories.
 #
 # Usage:
 #   ./hooks/install.sh          # Install hooks
@@ -8,17 +8,14 @@
 set -euo pipefail
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKSPACE_DIR="$(dirname "$HOOKS_DIR")"
-ORG_ROOT="$(dirname "$WORKSPACE_DIR")"
+ORG_ROOT="$(dirname "$HOOKS_DIR")"
 
 HOOK_NAMES=(pre-commit commit-msg)
 
 remove=false
 [[ "${1:-}" == "--remove" ]] && remove=true
 
-for repo_dir in "$ORG_ROOT"/*/; do
-  # Skip workspace itself and non-git dirs
-  [[ "$(basename "$repo_dir")" == "workspace" ]] && continue
+for repo_dir in "$ORG_ROOT"/repos/*/; do
   [[ ! -d "$repo_dir/.git" ]] && continue
 
   repo_name="$(basename "$repo_dir")"
@@ -34,7 +31,7 @@ for repo_dir in "$ORG_ROOT"/*/; do
       fi
     else
       ln -sf "$HOOKS_DIR/$hook" "$target"
-      echo "  ✓ $repo_name/$hook → workspace/hooks/$hook"
+      echo "  ✓ $repo_name/$hook → hooks/$hook"
     fi
   done
 done

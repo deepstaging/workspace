@@ -1,4 +1,9 @@
 # Deepstaging workspace dependencies
+
+# SDKs
+cask "dotnet-sdk"
+
+# Tools
 brew "node"
 brew "bash"
 brew "gh"

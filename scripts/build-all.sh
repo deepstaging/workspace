@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CONFIG="Release"
 RUN_TESTS=false
 SKIP=()
@@ -62,15 +62,15 @@ build_repo() {
 }
 
 build_repo "roslyn" \
-  "$ORG_ROOT/roslyn" \
+  "$ORG_ROOT/repos/roslyn" \
   "src/Deepstaging.Roslyn.Tests"
 
 build_repo "deepstaging" \
-  "$ORG_ROOT/deepstaging" \
+  "$ORG_ROOT/repos/deepstaging" \
   "src/Deepstaging.Tests"
 
 build_repo "web" \
-  "$ORG_ROOT/deepstaging-web" \
+  "$ORG_ROOT/repos/deepstaging-web" \
   "src/Deepstaging.Web.Tests"
 
 echo "✅ All builds complete."

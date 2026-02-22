@@ -59,10 +59,10 @@ echo ""
 echo "Repositories"
 echo "─────────────────────────────────────"
 
-ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 for repo in roslyn deepstaging deepstaging-web assets .github; do
-  if [[ -d "$ORG_ROOT/$repo/.git" ]]; then
-    branch=$(cd "$ORG_ROOT/$repo" && git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+  if [[ -d "$ORG_ROOT/repos/$repo/.git" ]]; then
+    branch=$(cd "$ORG_ROOT/repos/$repo" && git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
     printf "  ✅ %-20s (%s)\n" "$repo" "$branch"
     inc_pass
   else

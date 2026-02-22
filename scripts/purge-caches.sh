@@ -7,16 +7,15 @@
 
 set -euo pipefail
 
-ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FORCE=false
 [[ "${1:-}" == "--force" ]] && FORCE=true
 
-DIRS=$(find "$ORG_ROOT" -maxdepth 4 \
+DIRS=$(find "$ORG_ROOT/repos" -maxdepth 4 \
   \( -name bin -o -name obj \) \
   -type d \
   -not -path '*/node_modules/*' \
   -not -path '*/.git/*' \
-  -not -path '*/workspace/*' \
   2>/dev/null | sort)
 
 if [[ -z "$DIRS" ]]; then

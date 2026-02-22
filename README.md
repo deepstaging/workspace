@@ -5,17 +5,31 @@ Developer tooling for the Deepstaging multi-repo ecosystem.
 ## Quick Start
 
 ```bash
-# Clone all repos side-by-side:
-#   ~/org/deepstaging/
-#   ├── roslyn/
-#   ├── deepstaging/
-#   ├── deepstaging-web/
-#   ├── assets/
-#   ├── .github/
-#   └── workspace/        ← you are here
+# Clone the workspace repo:
+git clone git@github.com:deepstaging/workspace.git
+cd workspace
 
-# Bootstrap (installs tools, hooks, local NuGet feed):
+# Bootstrap (installs tools, clones repos, sets up hooks & NuGet feed):
 ./bootstrap.sh
+```
+
+### Directory Layout
+
+```
+workspace/                ← this repo (org root)
+├── repos/                ← cloned by init.sh (.gitignored)
+│   ├── roslyn/
+│   ├── deepstaging/
+│   ├── deepstaging-web/
+│   ├── assets/
+│   └── .github/
+├── scripts/
+├── hooks/
+├── packages/             ← local NuGet feed
+├── init.sh
+├── bootstrap.sh
+├── .envrc
+└── Brewfile
 ```
 
 ## Scripts
@@ -46,9 +60,19 @@ pack-local.sh --version-suffix dev.42   # Custom version suffix
 pack-local.sh --skip web                # Skip a repo
 ```
 
+## Init & Cloning
+
+`init.sh` clones all repositories into `repos/`. It is called automatically
+by `bootstrap.sh`, but you can run it standalone:
+
+```bash
+./init.sh              # Clone via SSH (default)
+./init.sh --https      # Clone via HTTPS
+```
+
 ## Git Hooks
 
-Shared hooks are installed into all sibling repos by `bootstrap.sh`.
+Shared hooks are installed into all cloned repos by `bootstrap.sh`.
 
 | Hook | Behavior |
 |------|----------|
@@ -69,8 +93,8 @@ Uses [direnv](https://direnv.net/) for automatic environment setup. Key variable
 
 | Variable | Value |
 |----------|-------|
-| `DEEPSTAGING_ORG_ROOT` | Parent directory containing all repos |
-| `DEEPSTAGING_WORKSPACE_DIR` | This directory |
+| `DEEPSTAGING_ORG_ROOT` | This directory (workspace root) |
+| `DEEPSTAGING_WORKSPACE_DIR` | Same as `ORG_ROOT` |
 | `DEEPSTAGING_LOCAL_NUGET_FEED` | `$ORG_ROOT/packages` — local NuGet source |
 
 ## Dependency Graph

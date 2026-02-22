@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FEED="${DEEPSTAGING_LOCAL_NUGET_FEED:-$ORG_ROOT/packages}"
 SKIP=()
 EXTRA_ARGS=()
@@ -53,8 +53,8 @@ pack_repo() {
   echo ""
 }
 
-pack_repo "roslyn"      "$ORG_ROOT/roslyn"
-pack_repo "deepstaging" "$ORG_ROOT/deepstaging"
-pack_repo "web"         "$ORG_ROOT/deepstaging-web"
+pack_repo "roslyn"      "$ORG_ROOT/repos/roslyn"
+pack_repo "deepstaging" "$ORG_ROOT/repos/deepstaging"
+pack_repo "web"         "$ORG_ROOT/repos/deepstaging-web"
 
 echo "✅ All packages published to $FEED"
