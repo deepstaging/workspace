@@ -40,6 +40,7 @@ All scripts are in `scripts/` and added to `PATH` via direnv.
 |--------|---------|
 | `build-all.sh` | Cascading build: roslyn → deepstaging → web |
 | `pack-local.sh` | Pack NuGet packages to local feed |
+| `repack-consumer.sh` | Pack deps + clean-rebuild a consumer project |
 | `purge-caches.sh` | Remove bin/obj from all repos |
 | `sync-icons.sh` | Build & distribute package icons from assets repo |
 | `check-env.sh` | Validate tools and environment |
@@ -60,6 +61,23 @@ pack-local.sh                           # Pack all to local feed
 pack-local.sh --version-suffix dev.42   # Custom version suffix
 pack-local.sh --skip web                # Skip a repo
 ```
+
+### repack-consumer.sh
+
+Pack Deepstaging dependencies and clean-rebuild a consumer project in one step.
+Consumer projects are registered in `consumers.conf` at the workspace root.
+
+```bash
+repack-consumer.sh                # Interactive menu (MRU-ordered)
+repack-consumer.sh SharedNotes    # By name
+repack-consumer.sh --list         # Show consumers + resolved pack chains
+repack-consumer.sh --pack-only    # Pack deps without rebuilding
+repack-consumer.sh --no-pack      # Just clean + rebuild (packages already fresh)
+repack-consumer.sh --purge        # Also remove bin/obj (full clean rebuild)
+```
+
+See [Consumer Projects](docs/consumer-projects.md) for details on registering
+and managing consumer projects.
 
 ## Init & Cloning
 

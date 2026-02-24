@@ -23,6 +23,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Generate a single timestamp suffix so all packages share the same version
+if [[ ${#EXTRA_ARGS[@]} -eq 0 ]] || ! printf '%s\n' "${EXTRA_ARGS[@]}" | grep -qE '^--version-suffix$|^--no-version-suffix$|^--ci$'; then
+  _suffix="local.$(date -u +%Y%m%d%H%M%S)"
+  EXTRA_ARGS+=(--version-suffix "$_suffix")
+fi
+
 mkdir -p "$FEED"
 
 # Sync icons from assets repo before packing
