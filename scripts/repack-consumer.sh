@@ -6,7 +6,7 @@
 #
 # Usage:
 #   repack-consumer.sh                    # Interactive menu
-#   repack-consumer.sh SharedNotes        # By name (basename match)
+#   repack-consumer.sh SharedNotes        # By name (name= or basename match)
 #   repack-consumer.sh --list             # List registered consumers
 #   repack-consumer.sh --pack-only        # Pack deps without rebuilding
 #   repack-consumer.sh --no-pack          # Skip packing, just clean + rebuild
@@ -90,9 +90,13 @@ parse_consumers() {
     [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
     read -r path deps_rest <<< "$line"
+    local name=""
+    if [[ "$path" == *=* ]]; then
+      name="${path%%=*}"
+      path="${path#*=}"
+    fi
     path="$(expand_path "$path")"
-    local name
-    name="$(basename "$path")"
+    [[ -z "$name" ]] && name="$(basename "$path")"
 
     CONSUMER_NAMES+=("$name")
     CONSUMER_PATHS[$name]="$path"

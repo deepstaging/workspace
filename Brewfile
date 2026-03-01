@@ -5,6 +5,7 @@ cask "dotnet-sdk"
 
 # Tools
 brew "node"
+brew "python"
 brew "bash"
 brew "gh"
 brew "direnv"
