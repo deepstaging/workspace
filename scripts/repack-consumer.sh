@@ -30,9 +30,10 @@ declare -A REPO_DEPS
 REPO_DEPS[roslyn]=""
 REPO_DEPS[deepstaging]="roslyn"
 REPO_DEPS[deepstaging-web]="deepstaging"
+REPO_DEPS[deepstaging-azure]="deepstaging"
 
 # Topological order (used to sort the pack list)
-TOPO_ORDER=(roslyn deepstaging deepstaging-web)
+TOPO_ORDER=(roslyn deepstaging deepstaging-web deepstaging-azure)
 
 # ── Arg parsing ────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -72,6 +73,7 @@ resolve_transitive() {
   for repo in "${TOPO_ORDER[@]}"; do
     [[ -n "${needed[$repo]:-}" ]] && echo "$repo"
   done
+  return 0
 }
 
 # ── Parse consumers.conf ──────────────────────

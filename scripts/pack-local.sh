@@ -66,8 +66,9 @@ pack_repo() {
   echo ""
 }
 
-pack_repo "roslyn"      "$ORG_ROOT/repos/roslyn"
-pack_repo "deepstaging" "$ORG_ROOT/repos/deepstaging"
-pack_repo "web"         "$ORG_ROOT/repos/deepstaging-web"
+pack_repo "roslyn"            "$ORG_ROOT/repos/roslyn"
+pack_repo "deepstaging"      "$ORG_ROOT/repos/deepstaging"
+pack_repo "web"              "$ORG_ROOT/repos/deepstaging-web"
+pack_repo "deepstaging-azure" "$ORG_ROOT/repos/deepstaging-azure"
 
 echo "✅ All packages published to $FEED"
