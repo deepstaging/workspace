@@ -1,6 +1,33 @@
 # Deepstaging Workspace
 
-Developer tooling for the Deepstaging multi-repo ecosystem.
+[Deepstaging](https://deepstaging.github.io/deepstaging) is a C# source
+generator toolkit that eliminates boilerplate across four domains—effect
+systems, strongly-typed IDs, configuration providers, and HTTP clients—using
+compile-time code generation with zero runtime reflection. Every feature ships
+with Roslyn analyzers and code fixes so errors surface in your editor, not at
+runtime.
+
+This **workspace** repo orchestrates development across the multi-repo
+ecosystem. It clones the component repositories, wires up a local NuGet feed,
+and provides scripts for cascading builds, packing, and consumer-project
+management.
+
+### Repositories
+
+| Repo | Role |
+|------|------|
+| **roslyn** | Low-level Roslyn abstraction library (queries, projections, emit builders, code fixes) |
+| **deepstaging** | Core generators, analyzers, runtime, and infrastructure integrations (Postgres, Marten, Supabase, Azure) |
+| **assets** | Canonical source for package icons, logos, and brand assets |
+| **.github** | Shared GitHub Actions workflows |
+
+### Dependency Graph
+
+```
+roslyn → deepstaging
+```
+
+Build and pack scripts follow this order automatically.
 
 ## Quick Start
 
@@ -113,11 +140,3 @@ Uses [direnv](https://direnv.net/) for automatic environment setup. Key variable
 | `DEEPSTAGING_ORG_ROOT` | This directory (workspace root) |
 | `DEEPSTAGING_WORKSPACE_DIR` | Same as `ORG_ROOT` |
 | `DEEPSTAGING_LOCAL_NUGET_FEED` | `$ORG_ROOT/packages` — local NuGet source |
-
-## Dependency Graph
-
-```
-roslyn → deepstaging
-```
-
-Build and pack scripts follow this order automatically.
