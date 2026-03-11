@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Sync package icons from the local assets repo into each project repo.
-# Builds icons if the .icons-built marker is missing or stale.
+# Sync package icons from the local assets repo into each packable project.
+# Auto-discovers IsPackable=true projects from roslyn and deepstaging repos.
+# Projects without a matching icon in dist/ get a fallback (base icon) + warning.
 #
 # Usage:
 #   sync-icons.sh              # Build (if needed) and copy icons
@@ -13,18 +14,6 @@ ORG_ROOT="${DEEPSTAGING_ORG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pw
 ASSETS_DIR="$ORG_ROOT/repos/assets"
 ICONS_DIST="$ASSETS_DIR/dist/icons"
 MARKER="$ASSETS_DIR/.icons-built"
-
-# Icon name → repo-relative destination
-# Format: PackageName:repo/path/to/project
-ICON_MAP=(
-  "Deepstaging.Roslyn:roslyn/src/Core/Deepstaging.Roslyn"
-  "Deepstaging.Roslyn.Testing:roslyn/src/Core/Deepstaging.Roslyn.Testing"
-  "Deepstaging.Roslyn.TypeScript:roslyn/src/TypeScript/Deepstaging.Roslyn.TypeScript"
-  "Deepstaging.Roslyn.TypeScript.Testing:roslyn/src/TypeScript/Deepstaging.Roslyn.TypeScript.Testing"
-  "Deepstaging.Templates:roslyn/templates"
-  "Deepstaging:deepstaging/src/Core/Deepstaging"
-  "Deepstaging.Testing:deepstaging/src/Testing/Deepstaging.Testing"
-)
 
 CHECK_ONLY=false
 FORCE=false
@@ -59,9 +48,41 @@ if [[ "$CHECK_ONLY" == false ]]; then
   fi
 fi
 
-FAILED=0
+# Auto-discover all IsPackable=true projects
+discover_packable() {
+  local repo_name="$1"
+  local repo_dir="$ORG_ROOT/repos/$repo_name"
+  [[ -d "$repo_dir" ]] || return
 
-for entry in "${ICON_MAP[@]}"; do
+  while IFS= read -r csproj; do
+    if grep -q '<IsPackable>true</IsPackable>' "$csproj" 2>/dev/null; then
+      local proj_dir
+      proj_dir="$(dirname "$csproj")"
+      local rel_path="${proj_dir#"$ORG_ROOT/repos/"}"
+      local pkg_name
+      pkg_name="$(basename "${csproj%.csproj}")"
+      echo "${pkg_name}:${rel_path}"
+    fi
+  done < <(find "$repo_dir" -name '*.csproj' -not -path '*/bin/*' -not -path '*/obj/*')
+}
+
+PROJECTS=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && PROJECTS+=("$line")
+done < <(discover_packable roslyn; discover_packable deepstaging)
+
+if [[ ${#PROJECTS[@]} -eq 0 ]]; then
+  echo "No packable projects found."
+  exit 0
+fi
+
+FAILED=0
+WARNINGS=0
+
+# Determine fallback icon (base icon with no badge)
+FALLBACK="$ICONS_DIST/Deepstaging.png"
+
+for entry in "${PROJECTS[@]}"; do
   name="${entry%%:*}"
   rel_dir="${entry#*:}"
   dest="$ORG_ROOT/repos/$rel_dir/icon.png"
@@ -75,12 +96,16 @@ for entry in "${ICON_MAP[@]}"; do
       echo "  ✅ $rel_dir/icon.png"
     fi
   else
-    if [[ ! -f "$src" ]]; then
-      echo "  ❌ $name.png not in assets/dist/icons/"
-      FAILED=1
-    else
+    if [[ -f "$src" ]]; then
       cp "$src" "$dest"
       echo "  ✅ $rel_dir/icon.png"
+    elif [[ -f "$FALLBACK" ]]; then
+      cp "$FALLBACK" "$dest"
+      echo "  ⚠️  $rel_dir/icon.png (fallback — no icon for $name in manifest.txt)"
+      WARNINGS=$((WARNINGS + 1))
+    else
+      echo "  ❌ $name.png not in assets/dist/icons/ and no fallback available"
+      FAILED=1
     fi
   fi
 done
@@ -92,4 +117,8 @@ if [[ $FAILED -ne 0 ]]; then
 fi
 
 echo ""
-echo "All icons synced."
+if [[ $WARNINGS -gt 0 ]]; then
+  echo "All icons synced ($WARNINGS using fallback — add to assets/icons/manifest.txt for custom icons)."
+else
+  echo "All icons synced."
+fi
