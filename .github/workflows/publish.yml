@@ -7,8 +7,7 @@
 # Dependency order: roslyn → deepstaging
 #
 # Packages are pushed to GitHub Packages first (instant availability),
-# then to nuget.org for public consumers. Downstream stages restore from
-# GitHub Packages, so there is no indexing delay between stages.
+# then to nuget.org for public consumers.
 
 name: Publish All Packages
 
@@ -36,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write    # OIDC Trusted Publishing (nuget.org)
-      contents: write    # Commit updated Versions.props
+      contents: read     # Checkout repos
       packages: write    # Push to GitHub Packages
 
     steps:
@@ -50,22 +49,21 @@ jobs:
         with:
           repository: deepstaging/roslyn
           path: workspace/repos/roslyn
-          fetch-depth: 0
-          token: ${{ secrets.DISPATCH_TOKEN }}
+          token: ${{ secrets.ORG_PAT }}
 
       - name: Checkout deepstaging
         uses: actions/checkout@v6
         with:
           repository: deepstaging/deepstaging
           path: workspace/repos/deepstaging
-          fetch-depth: 0
-          token: ${{ secrets.DISPATCH_TOKEN }}
+          token: ${{ secrets.ORG_PAT }}
 
       - name: Checkout assets
         uses: actions/checkout@v6
         with:
           repository: deepstaging/assets
           path: workspace/repos/assets
+          token: ${{ secrets.ORG_PAT }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -90,7 +88,7 @@ jobs:
         working-directory: workspace
         run: |
           export DEEPSTAGING_ORG_ROOT="$(pwd)"
-          repos/roslyn/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
+          repos/roslyn/build/pack.sh ${{ steps.suffix.outputs.args }}
 
       - name: NuGet Login (Trusted Publishing)
         id: nuget-login
@@ -102,9 +100,8 @@ jobs:
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
         working-directory: workspace
         run: |
-          VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' repos/roslyn/Deepstaging.Roslyn.Versions.props)
-          echo "Publishing roslyn $VERSION to GitHub Packages"
-          for pkg in packages/Deepstaging.Roslyn*."$VERSION".nupkg; do
+          echo "Publishing roslyn to GitHub Packages"
+          for pkg in packages/Deepstaging.Roslyn*.nupkg; do
             [ -f "$pkg" ] || continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
@@ -117,9 +114,8 @@ jobs:
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
         working-directory: workspace
         run: |
-          VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' repos/roslyn/Deepstaging.Roslyn.Versions.props)
-          echo "Publishing roslyn $VERSION to nuget.org"
-          for pkg in packages/Deepstaging.Roslyn*."$VERSION".nupkg; do
+          echo "Publishing roslyn to nuget.org"
+          for pkg in packages/Deepstaging.Roslyn*.nupkg; do
             [ -f "$pkg" ] || continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
@@ -128,36 +124,20 @@ jobs:
               --skip-duplicate
           done
 
-      - name: Commit roslyn Versions.props
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
-        working-directory: workspace/repos/roslyn
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Deepstaging.Roslyn.Versions.props templates/templates/roslynkit/Directory.Packages.props
-          if git diff --cached --quiet; then
-            echo "No version changes"
-          else
-            VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' Deepstaging.Roslyn.Versions.props)
-            git commit -m "chore: update Versions.props to $VERSION [skip ci]"
-            git push
-          fi
-
       # ── Deepstaging ─────────────────────────────
       - name: Pack deepstaging
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
         working-directory: workspace
         run: |
           export DEEPSTAGING_ORG_ROOT="$(pwd)"
-          repos/deepstaging/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
+          repos/deepstaging/build/pack.sh ${{ steps.suffix.outputs.args }}
 
       - name: Push deepstaging → GitHub Packages
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
         working-directory: workspace
         run: |
-          VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' repos/deepstaging/Deepstaging.Versions.props)
-          echo "Publishing deepstaging $VERSION to GitHub Packages"
-          for pkg in packages/Deepstaging."$VERSION".nupkg packages/Deepstaging.*."$VERSION".nupkg; do
+          echo "Publishing deepstaging to GitHub Packages"
+          for pkg in packages/Deepstaging*.nupkg; do
             [ -f "$pkg" ] || continue
             [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
             echo "  → $(basename "$pkg")"
@@ -171,9 +151,8 @@ jobs:
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
         working-directory: workspace
         run: |
-          VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' repos/deepstaging/Deepstaging.Versions.props)
-          echo "Publishing deepstaging $VERSION to nuget.org"
-          for pkg in packages/Deepstaging."$VERSION".nupkg packages/Deepstaging.*."$VERSION".nupkg; do
+          echo "Publishing deepstaging to nuget.org"
+          for pkg in packages/Deepstaging*.nupkg; do
             [ -f "$pkg" ] || continue
             [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
             echo "  → $(basename "$pkg")"
@@ -182,21 +161,6 @@ jobs:
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
-
-      - name: Commit deepstaging Versions.props
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
-        working-directory: workspace/repos/deepstaging
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet Deepstaging.Versions.props; then
-            echo "No version changes"
-          else
-            git add Deepstaging.Versions.props
-            VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' Deepstaging.Versions.props)
-            git commit -m "chore: update Versions.props to $VERSION [skip ci]"
-            git push
-          fi
 
       # ── Summary ─────────────────────────────────
       - name: Summary
