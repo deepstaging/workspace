@@ -34,7 +34,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write    # OIDC Trusted Publishing (nuget.org)
       contents: read     # Checkout repos
       packages: write    # Push to GitHub Packages
 
@@ -97,12 +96,6 @@ jobs:
           export DEEPSTAGING_ORG_ROOT="$(pwd)"
           repos/roslyn/build/pack.sh ${{ steps.suffix.outputs.args }}
 
-      - name: NuGet Login (Trusted Publishing)
-        id: nuget-login
-        uses: nuget/login@v1
-        with:
-          user: ${{ vars.NUGET_USER }}
-
       - name: Push roslyn → GitHub Packages
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
         working-directory: workspace
@@ -126,7 +119,7 @@ jobs:
             [ -f "$pkg" ] || continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
-              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --api-key "${{ secrets.NUGET_API_KEY }}" \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
@@ -164,7 +157,7 @@ jobs:
             [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
-              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --api-key "${{ secrets.NUGET_API_KEY }}" \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
