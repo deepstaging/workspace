@@ -24,7 +24,7 @@ ICON_MAP=(
   "Deepstaging.Templates:roslyn/templates"
   "Deepstaging:deepstaging/src/Core/Deepstaging"
   "Deepstaging.Testing:deepstaging/src/Testing/Deepstaging.Testing"
-  "Deepstaging.Web:deepstaging-web/src/Core/Deepstaging.Web"
+  "Deepstaging.Web:deepstaging/src/Web/Deepstaging.Web"
 )
 
 CHECK_ONLY=false

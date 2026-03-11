@@ -1,7 +1,7 @@
 # Consumer Projects
 
 Consumer projects are applications that depend on Deepstaging NuGet packages
-(e.g. `Deepstaging`, `Deepstaging.Web`). They live outside the Deepstaging
+(e.g. `Deepstaging`, `Deepstaging.Testing`). They live outside the Deepstaging
 workspace in their own repositories.
 
 During development, you'll frequently need to pack fresh Deepstaging packages
@@ -14,7 +14,7 @@ Add an entry to `consumers.conf` at the workspace root:
 
 ```
 # path                              depends-on
-~/org/oval/repos/SharedNotes        deepstaging-web
+~/org/oval/repos/SharedNotes        deepstaging
 ~/org/other/repos/SomeApi           deepstaging
 ```
 
@@ -30,21 +30,13 @@ Each line has:
 The dependency graph is:
 
 ```
-roslyn → deepstaging → deepstaging-web
+roslyn → deepstaging
 ```
 
-When you declare a dependency like `deepstaging-web`, the script automatically
-resolves transitive deps — it will pack `roslyn`, then `deepstaging`, then
-`deepstaging-web`.
+When you declare a dependency on `deepstaging`, the script automatically
+resolves transitive deps — it will pack `roslyn`, then `deepstaging`.
 
-If a consumer depends on multiple repos (e.g. a future `deepstaging-cli`
-sibling), list them all:
-
-```
-~/org/projects/MyApp   deepstaging-web deepstaging-cli
-```
-
-The script takes the union of all transitive dependencies and packs them in
+The script computes the union of all transitive dependencies and packs them in
 topological order.
 
 ## Using repack-consumer.sh
@@ -78,7 +70,7 @@ Shows all registered consumers, their declared deps, and the resolved pack
 chain:
 
 ```
-SharedNotes           deps: deepstaging-web       packs: roslyn deepstaging deepstaging-web
+SharedNotes           deps: deepstaging            packs: roslyn deepstaging
 ```
 
 ### Pack only (skip consumer rebuild)

@@ -29,11 +29,9 @@ TARGET=""
 declare -A REPO_DEPS
 REPO_DEPS[roslyn]=""
 REPO_DEPS[deepstaging]="roslyn"
-REPO_DEPS[deepstaging-web]="deepstaging"
-REPO_DEPS[deepstaging-azure]="deepstaging"
 
 # Topological order (used to sort the pack list)
-TOPO_ORDER=(roslyn deepstaging deepstaging-web deepstaging-azure)
+TOPO_ORDER=(roslyn deepstaging)
 
 # ── Arg parsing ────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -216,10 +214,7 @@ pack_deps() {
       [[ "$repo" == "$needed" ]] && found=true && break
     done
     if ! $found; then
-      # Map repo name to pack-local.sh's skip key
-      local skip_key="$repo"
-      [[ "$repo" == "deepstaging-web" ]] && skip_key="web"
-      skip_args+=(--skip "$skip_key")
+      skip_args+=(--skip "$repo")
     fi
   done
 

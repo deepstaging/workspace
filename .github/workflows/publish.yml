@@ -4,7 +4,7 @@
 # it checks out every repo into the workspace layout so shared build props
 # and pack scripts work identically to a developer machine.
 #
-# Dependency order: roslyn → deepstaging → deepstaging-azure
+# Dependency order: roslyn → deepstaging
 #
 # Packages are pushed to GitHub Packages first (instant availability),
 # then to nuget.org for public consumers. Downstream stages restore from
@@ -58,15 +58,6 @@ jobs:
         with:
           repository: deepstaging/deepstaging
           path: workspace/repos/deepstaging
-          fetch-depth: 0
-          token: ${{ secrets.DISPATCH_TOKEN }}
-
-      - name: Checkout deepstaging-azure
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
-        uses: actions/checkout@v6
-        with:
-          repository: deepstaging/deepstaging-azure
-          path: workspace/repos/deepstaging-azure
           fetch-depth: 0
           token: ${{ secrets.DISPATCH_TOKEN }}
 
@@ -204,54 +195,6 @@ jobs:
             git add Deepstaging.Versions.props
             VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' Deepstaging.Versions.props)
             git commit -m "chore: update Versions.props to $VERSION [skip ci]"
-            git push
-          fi
-
-      # ── Azure ───────────────────────────────────
-      - name: Pack deepstaging-azure
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
-        working-directory: workspace
-        run: |
-          export DEEPSTAGING_ORG_ROOT="$(pwd)"
-          repos/deepstaging-azure/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
-
-      - name: Push azure → GitHub Packages
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
-        working-directory: workspace
-        run: |
-          for pkg in packages/Deepstaging.Azure*; do
-            [ -f "$pkg" ] || continue
-            echo "  → $(basename "$pkg")"
-            dotnet nuget push "$pkg" \
-              --api-key ${{ secrets.GITHUB_TOKEN }} \
-              --source "$GITHUB_PACKAGES_URL" \
-              --skip-duplicate
-          done
-
-      - name: Push azure → nuget.org
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
-        working-directory: workspace
-        run: |
-          for pkg in packages/Deepstaging.Azure*; do
-            [ -f "$pkg" ] || continue
-            echo "  → $(basename "$pkg")"
-            dotnet nuget push "$pkg" \
-              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
-              --source https://api.nuget.org/v3/index.json \
-              --skip-duplicate
-          done
-
-      - name: Commit azure Versions.props
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
-        working-directory: workspace/repos/deepstaging-azure
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A *.Versions.props
-          if git diff --cached --quiet; then
-            echo "No version changes"
-          else
-            git commit -m "chore: update Versions.props [skip ci]"
             git push
           fi
 

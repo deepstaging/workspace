@@ -2,12 +2,11 @@
 # Cascading build across all repositories in dependency order.
 #
 # Dependency graph:
-#   roslyn → deepstaging → deepstaging-web
+#   roslyn → deepstaging
 #
 # Usage:
 #   build-all.sh              # Build all (Release)
 #   build-all.sh --test       # Build + test all
-#   build-all.sh --skip web   # Skip deepstaging-web
 
 set -euo pipefail
 
@@ -68,9 +67,5 @@ build_repo "roslyn" \
 build_repo "deepstaging" \
   "$ORG_ROOT/repos/deepstaging" \
   "src/Deepstaging.Tests"
-
-build_repo "web" \
-  "$ORG_ROOT/repos/deepstaging-web" \
-  "src/Deepstaging.Web.Tests"
 
 echo "✅ All builds complete."

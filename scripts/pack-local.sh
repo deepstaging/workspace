@@ -2,12 +2,12 @@
 # Pack NuGet packages and publish to the local feed.
 #
 # Dependency graph:
-#   roslyn → deepstaging → deepstaging-azure
+#   roslyn → deepstaging
 #
 # Usage:
 #   pack-local.sh                           # Pack all
 #   pack-local.sh --version-suffix dev.42   # Custom suffix
-#   pack-local.sh --skip web                # Skip deepstaging-web
+#   pack-local.sh --skip deepstaging        # Skip deepstaging
 
 set -euo pipefail
 
@@ -68,6 +68,5 @@ pack_repo() {
 
 pack_repo "roslyn"             "$ORG_ROOT/repos/roslyn"
 pack_repo "deepstaging"       "$ORG_ROOT/repos/deepstaging"
-pack_repo "deepstaging-azure" "$ORG_ROOT/repos/deepstaging-azure"
 
 echo "✅ All packages published to $FEED"

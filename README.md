@@ -20,7 +20,6 @@ workspace/                ← this repo (org root)
 ├── repos/                ← cloned by init.sh (.gitignored)
 │   ├── roslyn/
 │   ├── deepstaging/
-│   ├── deepstaging-web/
 │   ├── assets/
 │   └── .github/
 ├── scripts/
@@ -38,7 +37,7 @@ All scripts are in `scripts/` and added to `PATH` via direnv.
 
 | Script | Purpose |
 |--------|---------|
-| `build-all.sh` | Cascading build: roslyn → deepstaging → web |
+| `build-all.sh` | Cascading build: roslyn → deepstaging |
 | `pack-local.sh` | Pack NuGet packages to local feed |
 | `repack-consumer.sh` | Pack deps + clean-rebuild a consumer project |
 | `purge-caches.sh` | Remove bin/obj from all repos |
@@ -50,7 +49,6 @@ All scripts are in `scripts/` and added to `PATH` via direnv.
 ```bash
 build-all.sh              # Build all (Release)
 build-all.sh --test       # Build + run tests
-build-all.sh --skip web   # Skip deepstaging-web
 build-all.sh --debug      # Debug configuration
 ```
 
@@ -119,7 +117,7 @@ Uses [direnv](https://direnv.net/) for automatic environment setup. Key variable
 ## Dependency Graph
 
 ```
-roslyn → deepstaging → deepstaging-web
+roslyn → deepstaging
 ```
 
 Build and pack scripts follow this order automatically.
