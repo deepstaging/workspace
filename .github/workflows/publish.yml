@@ -6,8 +6,7 @@
 #
 # Dependency order: roslyn → deepstaging
 #
-# Packages are pushed to GitHub Packages first (instant availability),
-# then to nuget.org for public consumers.
+# Packages are pushed to GitHub Packages (publicly readable).
 
 name: Publish All Packages
 
@@ -100,27 +99,12 @@ jobs:
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
         working-directory: workspace
         run: |
-          echo "Publishing roslyn to GitHub Packages"
           for pkg in packages/Deepstaging.Roslyn*.nupkg; do
             [ -f "$pkg" ] || continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
               --api-key ${{ secrets.GITHUB_TOKEN }} \
               --source "$GITHUB_PACKAGES_URL" \
-              --skip-duplicate
-          done
-
-      - name: Push roslyn → nuget.org
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
-        working-directory: workspace
-        run: |
-          echo "Publishing roslyn to nuget.org"
-          for pkg in packages/Deepstaging.Roslyn*.nupkg; do
-            [ -f "$pkg" ] || continue
-            echo "  → $(basename "$pkg")"
-            dotnet nuget push "$pkg" \
-              --api-key "${{ secrets.NUGET_API_KEY }}" \
-              --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
 
@@ -136,7 +120,6 @@ jobs:
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
         working-directory: workspace
         run: |
-          echo "Publishing deepstaging to GitHub Packages"
           for pkg in packages/Deepstaging*.nupkg; do
             [ -f "$pkg" ] || continue
             [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
@@ -147,34 +130,15 @@ jobs:
               --skip-duplicate
           done
 
-      - name: Push deepstaging → nuget.org
-        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
-        working-directory: workspace
-        run: |
-          echo "Publishing deepstaging to nuget.org"
-          for pkg in packages/Deepstaging*.nupkg; do
-            [ -f "$pkg" ] || continue
-            [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
-            echo "  → $(basename "$pkg")"
-            dotnet nuget push "$pkg" \
-              --api-key "${{ secrets.NUGET_API_KEY }}" \
-              --source https://api.nuget.org/v3/index.json \
-              --skip-duplicate
-          done
-
       # ── Summary ─────────────────────────────────
       - name: Summary
         working-directory: workspace
         run: |
           echo "## Published Packages" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### GitHub Packages (instant)" >> "$GITHUB_STEP_SUMMARY"
           echo "Source: \`$GITHUB_PACKAGES_URL\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           for pkg in packages/*.nupkg; do
             [ -f "$pkg" ] || continue
             echo "- $(basename "$pkg")" >> "$GITHUB_STEP_SUMMARY"
           done
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### nuget.org (may take a few minutes to index)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Same packages pushed to nuget.org for public consumers." >> "$GITHUB_STEP_SUMMARY"
