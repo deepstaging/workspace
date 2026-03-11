@@ -82,6 +82,13 @@ jobs:
             echo "args=--ci" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Sync package icons
+        working-directory: workspace
+        run: |
+          sudo apt-get install -yq librsvg2-bin
+          export DEEPSTAGING_ORG_ROOT="$(pwd)"
+          scripts/sync-icons.sh
+
       # ── Roslyn ──────────────────────────────────
       - name: Pack roslyn
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
