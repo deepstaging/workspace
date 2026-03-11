@@ -54,7 +54,7 @@ if [[ "$CHECK_ONLY" == false ]]; then
 
   if $needs_build; then
     echo "Building icons in assets repo..."
-    (cd "$ASSETS_DIR" && ./build.sh)
+    (cd "$ASSETS_DIR" && ./build.sh --icons-only)
     touch "$MARKER"
     echo ""
   fi
