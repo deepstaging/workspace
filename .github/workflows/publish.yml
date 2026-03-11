@@ -1,0 +1,231 @@
+# Publish all Deepstaging NuGet packages in dependency order.
+#
+# This workflow mirrors the local `scripts/pack-local.sh` flow:
+# it checks out every repo into the workspace layout so shared build props
+# and pack scripts work identically to a developer machine.
+#
+# Dependency order: roslyn → deepstaging → deepstaging-azure
+#
+# Each stage packs, pushes to NuGet, and waits for indexing before the
+# next stage starts (downstream packages depend on upstream NuGet refs).
+
+name: Publish All Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'Repos to publish (comma-separated, or "all")'
+        required: false
+        default: 'all'
+      version-suffix:
+        description: 'Version suffix (leave empty for CI default dev.N)'
+        required: false
+        default: ''
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC Trusted Publishing
+      contents: write   # Commit updated Versions.props
+
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v6
+        with:
+          path: workspace
+
+      - name: Checkout roslyn
+        uses: actions/checkout@v6
+        with:
+          repository: deepstaging/roslyn
+          path: workspace/repos/roslyn
+          fetch-depth: 0
+          token: ${{ secrets.DISPATCH_TOKEN }}
+
+      - name: Checkout deepstaging
+        uses: actions/checkout@v6
+        with:
+          repository: deepstaging/deepstaging
+          path: workspace/repos/deepstaging
+          fetch-depth: 0
+          token: ${{ secrets.DISPATCH_TOKEN }}
+
+      - name: Checkout deepstaging-azure
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
+        uses: actions/checkout@v6
+        with:
+          repository: deepstaging/deepstaging-azure
+          path: workspace/repos/deepstaging-azure
+          fetch-depth: 0
+          token: ${{ secrets.DISPATCH_TOKEN }}
+
+      - name: Checkout assets
+        uses: actions/checkout@v6
+        with:
+          repository: deepstaging/assets
+          path: workspace/repos/assets
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Create packages directory
+        run: mkdir -p workspace/packages
+
+      - name: Determine version suffix
+        id: suffix
+        run: |
+          if [[ -n "${{ inputs.version-suffix }}" ]]; then
+            echo "args=--version-suffix ${{ inputs.version-suffix }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--ci" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Roslyn ──────────────────────────────────
+      - name: Pack roslyn
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
+        working-directory: workspace
+        run: |
+          export DEEPSTAGING_ORG_ROOT="$(pwd)"
+          repos/roslyn/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
+
+      - name: NuGet Login (Trusted Publishing)
+        id: nuget-login
+        uses: nuget/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push roslyn packages
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
+        working-directory: workspace
+        run: |
+          VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' repos/roslyn/Deepstaging.Roslyn.Versions.props)
+          echo "Publishing roslyn $VERSION"
+          for pkg in packages/Deepstaging.Roslyn*."$VERSION".nupkg; do
+            [ -f "$pkg" ] || continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Commit roslyn Versions.props
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
+        working-directory: workspace/repos/roslyn
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Deepstaging.Roslyn.Versions.props templates/templates/roslynkit/Directory.Packages.props
+          if git diff --cached --quiet; then
+            echo "No version changes"
+          else
+            VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' Deepstaging.Roslyn.Versions.props)
+            git commit -m "chore: update Versions.props to $VERSION [skip ci]"
+            git push
+          fi
+
+      - name: Wait for NuGet indexing (roslyn)
+        if: (contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')) && (contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging'))
+        run: |
+          echo "Waiting 5 minutes for NuGet to index roslyn packages..."
+          sleep 300
+
+      # ── Deepstaging ─────────────────────────────
+      - name: Pack deepstaging
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
+        working-directory: workspace
+        run: |
+          export DEEPSTAGING_ORG_ROOT="$(pwd)"
+          repos/deepstaging/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
+
+      - name: Push deepstaging packages
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
+        working-directory: workspace
+        run: |
+          VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' repos/deepstaging/Deepstaging.Versions.props)
+          echo "Publishing deepstaging $VERSION"
+          for pkg in packages/Deepstaging."$VERSION".nupkg packages/Deepstaging.*."$VERSION".nupkg; do
+            [ -f "$pkg" ] || continue
+            # Skip roslyn packages (already pushed)
+            [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Commit deepstaging Versions.props
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
+        working-directory: workspace/repos/deepstaging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet Deepstaging.Versions.props; then
+            echo "No version changes"
+          else
+            git add Deepstaging.Versions.props
+            VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' Deepstaging.Versions.props)
+            git commit -m "chore: update Versions.props to $VERSION [skip ci]"
+            git push
+          fi
+
+      - name: Wait for NuGet indexing (deepstaging)
+        if: (contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')) && (contains(inputs.repos, 'all') || contains(inputs.repos, 'azure'))
+        run: |
+          echo "Waiting 5 minutes for NuGet to index deepstaging packages..."
+          sleep 300
+
+      # ── Azure ───────────────────────────────────
+      - name: Pack deepstaging-azure
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
+        working-directory: workspace
+        run: |
+          export DEEPSTAGING_ORG_ROOT="$(pwd)"
+          repos/deepstaging-azure/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
+
+      - name: Push azure packages
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
+        working-directory: workspace
+        run: |
+          for pkg in packages/Deepstaging.Azure*; do
+            [ -f "$pkg" ] || continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Commit azure Versions.props
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
+        working-directory: workspace/repos/deepstaging-azure
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A *.Versions.props
+          if git diff --cached --quiet; then
+            echo "No version changes"
+          else
+            git commit -m "chore: update Versions.props [skip ci]"
+            git push
+          fi
+
+      # ── Summary ─────────────────────────────────
+      - name: Summary
+        working-directory: workspace
+        run: |
+          echo "## Published Packages" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for pkg in packages/*.nupkg; do
+            [ -f "$pkg" ] || continue
+            echo "- $(basename "$pkg")" >> "$GITHUB_STEP_SUMMARY"
+          done
