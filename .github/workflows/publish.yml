@@ -6,8 +6,9 @@
 #
 # Dependency order: roslyn → deepstaging → deepstaging-azure
 #
-# Each stage packs, pushes to NuGet, and waits for indexing before the
-# next stage starts (downstream packages depend on upstream NuGet refs).
+# Packages are pushed to GitHub Packages first (instant availability),
+# then to nuget.org for public consumers. Downstream stages restore from
+# GitHub Packages, so there is no indexing delay between stages.
 
 name: Publish All Packages
 
@@ -27,12 +28,16 @@ concurrency:
   group: publish
   cancel-in-progress: false
 
+env:
+  GITHUB_PACKAGES_URL: https://nuget.pkg.github.com/deepstaging/index.json
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # OIDC Trusted Publishing
-      contents: write   # Commit updated Versions.props
+      id-token: write    # OIDC Trusted Publishing (nuget.org)
+      contents: write    # Commit updated Versions.props
+      packages: write    # Push to GitHub Packages
 
     steps:
       - name: Checkout workspace
@@ -102,12 +107,27 @@ jobs:
         with:
           user: ${{ vars.NUGET_USER }}
 
-      - name: Push roslyn packages
+      - name: Push roslyn → GitHub Packages
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
         working-directory: workspace
         run: |
           VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' repos/roslyn/Deepstaging.Roslyn.Versions.props)
-          echo "Publishing roslyn $VERSION"
+          echo "Publishing roslyn $VERSION to GitHub Packages"
+          for pkg in packages/Deepstaging.Roslyn*."$VERSION".nupkg; do
+            [ -f "$pkg" ] || continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --source "$GITHUB_PACKAGES_URL" \
+              --skip-duplicate
+          done
+
+      - name: Push roslyn → nuget.org
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')
+        working-directory: workspace
+        run: |
+          VERSION=$(grep -oP '(?<=<DeepstagingRoslynVersion>).*(?=</DeepstagingRoslynVersion>)' repos/roslyn/Deepstaging.Roslyn.Versions.props)
+          echo "Publishing roslyn $VERSION to nuget.org"
           for pkg in packages/Deepstaging.Roslyn*."$VERSION".nupkg; do
             [ -f "$pkg" ] || continue
             echo "  → $(basename "$pkg")"
@@ -132,12 +152,6 @@ jobs:
             git push
           fi
 
-      - name: Wait for NuGet indexing (roslyn)
-        if: (contains(inputs.repos, 'all') || contains(inputs.repos, 'roslyn')) && (contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging'))
-        run: |
-          echo "Waiting 5 minutes for NuGet to index roslyn packages..."
-          sleep 300
-
       # ── Deepstaging ─────────────────────────────
       - name: Pack deepstaging
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
@@ -146,15 +160,30 @@ jobs:
           export DEEPSTAGING_ORG_ROOT="$(pwd)"
           repos/deepstaging/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
 
-      - name: Push deepstaging packages
+      - name: Push deepstaging → GitHub Packages
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
         working-directory: workspace
         run: |
           VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' repos/deepstaging/Deepstaging.Versions.props)
-          echo "Publishing deepstaging $VERSION"
+          echo "Publishing deepstaging $VERSION to GitHub Packages"
           for pkg in packages/Deepstaging."$VERSION".nupkg packages/Deepstaging.*."$VERSION".nupkg; do
             [ -f "$pkg" ] || continue
-            # Skip roslyn packages (already pushed)
+            [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --source "$GITHUB_PACKAGES_URL" \
+              --skip-duplicate
+          done
+
+      - name: Push deepstaging → nuget.org
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')
+        working-directory: workspace
+        run: |
+          VERSION=$(grep -oP '(?<=<DeepstagingVersion>).*(?=</DeepstagingVersion>)' repos/deepstaging/Deepstaging.Versions.props)
+          echo "Publishing deepstaging $VERSION to nuget.org"
+          for pkg in packages/Deepstaging."$VERSION".nupkg packages/Deepstaging.*."$VERSION".nupkg; do
+            [ -f "$pkg" ] || continue
             [[ "$(basename "$pkg")" == Deepstaging.Roslyn* ]] && continue
             echo "  → $(basename "$pkg")"
             dotnet nuget push "$pkg" \
@@ -178,12 +207,6 @@ jobs:
             git push
           fi
 
-      - name: Wait for NuGet indexing (deepstaging)
-        if: (contains(inputs.repos, 'all') || contains(inputs.repos, 'deepstaging')) && (contains(inputs.repos, 'all') || contains(inputs.repos, 'azure'))
-        run: |
-          echo "Waiting 5 minutes for NuGet to index deepstaging packages..."
-          sleep 300
-
       # ── Azure ───────────────────────────────────
       - name: Pack deepstaging-azure
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
@@ -192,7 +215,20 @@ jobs:
           export DEEPSTAGING_ORG_ROOT="$(pwd)"
           repos/deepstaging-azure/build/pack.sh ${{ steps.suffix.outputs.args }} --update-versions
 
-      - name: Push azure packages
+      - name: Push azure → GitHub Packages
+        if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
+        working-directory: workspace
+        run: |
+          for pkg in packages/Deepstaging.Azure*; do
+            [ -f "$pkg" ] || continue
+            echo "  → $(basename "$pkg")"
+            dotnet nuget push "$pkg" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --source "$GITHUB_PACKAGES_URL" \
+              --skip-duplicate
+          done
+
+      - name: Push azure → nuget.org
         if: contains(inputs.repos, 'all') || contains(inputs.repos, 'azure')
         working-directory: workspace
         run: |
@@ -225,7 +261,13 @@ jobs:
         run: |
           echo "## Published Packages" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### GitHub Packages (instant)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: \`$GITHUB_PACKAGES_URL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
           for pkg in packages/*.nupkg; do
             [ -f "$pkg" ] || continue
             echo "- $(basename "$pkg")" >> "$GITHUB_STEP_SUMMARY"
           done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### nuget.org (may take a few minutes to index)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Same packages pushed to nuget.org for public consumers." >> "$GITHUB_STEP_SUMMARY"
